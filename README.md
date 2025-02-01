@@ -3,7 +3,7 @@ Trying GRPO on a toy task on a small VLM.
 
 
 # Idea
-This [blog post](https://huggingface.co/blog/open-r1/mini-r1-contdown-game) shows how GRPO an LLM to do r1 style reasoning
+This [blog post](https://www.philschmid.de/mini-deepseek-r1) shows how GRPO an LLM to do r1 style reasoning
 on a toy problem. As far as I know, no one has tried this on a VLM. My idea is to generate a simple visual reasoning
 dataset (not unlike the counting game in the blog post) and see if a VLM can do it.
 
