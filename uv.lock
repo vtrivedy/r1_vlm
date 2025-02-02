@@ -1020,7 +1020,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.6.0" },
     { name = "torchvision", specifier = ">=0.21.0" },
     { name = "transformers", git = "https://github.com/huggingface/transformers.git?rev=main" },
-    { name = "trl", specifier = ">=0.14.0" },
+    { name = "trl", directory = "trl_custom" },
 ]
 
 [[package]]
@@ -1263,17 +1263,53 @@ wheels = [
 
 [[package]]
 name = "trl"
-version = "0.14.0"
-source = { registry = "https://pypi.org/simple" }
+version = "0.15.0.dev0"
+source = { directory = "trl_custom" }
 dependencies = [
     { name = "accelerate" },
     { name = "datasets" },
     { name = "rich" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/01/26/30f5bdfb1910e42df2721028c4a8cb2a6528326555a17693e0670aa9a3e0/trl-0.14.0.tar.gz", hash = "sha256:ddbd73b12e870a9acb8c50bfa5704de88eb519e4aad5bd9e91177b2f93b908d8", size = 326357 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/62/0150e02e697be177c11962ef12e00d692943d69e33801a231bcd853c2dad/trl-0.14.0-py3-none-any.whl", hash = "sha256:2407df4ea0e92d2c228a49f92047b4856b2e09bdfc1cde2b2151d342092efee2", size = 313859 },
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", specifier = ">=0.34.0" },
+    { name = "bitsandbytes", marker = "extra == 'dev'" },
+    { name = "bitsandbytes", marker = "extra == 'quantization'" },
+    { name = "datasets", specifier = ">=2.21.0" },
+    { name = "deepspeed", marker = "sys_platform != 'win32' and extra == 'deepspeed'", specifier = ">=0.14.4" },
+    { name = "deepspeed", marker = "sys_platform != 'win32' and extra == 'dev'", specifier = ">=0.14.4" },
+    { name = "diffusers", marker = "extra == 'dev'", specifier = ">=0.18.0" },
+    { name = "diffusers", marker = "extra == 'diffusers'", specifier = ">=0.18.0" },
+    { name = "liger-kernel", marker = "sys_platform != 'win32' and extra == 'dev'", specifier = ">=0.4.0" },
+    { name = "liger-kernel", marker = "sys_platform != 'win32' and extra == 'liger'", specifier = ">=0.4.0" },
+    { name = "llm-blender", marker = "extra == 'dev'", specifier = ">=0.0.2" },
+    { name = "llm-blender", marker = "extra == 'judges'", specifier = ">=0.0.2" },
+    { name = "mergekit", marker = "extra == 'dev'", specifier = ">=0.0.5.1" },
+    { name = "mergekit", marker = "extra == 'mergekit'", specifier = ">=0.0.5.1" },
+    { name = "openai", marker = "extra == 'dev'", specifier = ">=1.23.2" },
+    { name = "openai", marker = "extra == 'judges'", specifier = ">=1.23.2" },
+    { name = "parameterized", marker = "extra == 'dev'" },
+    { name = "parameterized", marker = "extra == 'test'" },
+    { name = "peft", marker = "extra == 'dev'", specifier = ">=0.8.0" },
+    { name = "peft", marker = "extra == 'peft'", specifier = ">=0.8.0" },
+    { name = "pillow", marker = "extra == 'dev'" },
+    { name = "pillow", marker = "extra == 'vlm'" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'test'" },
+    { name = "pytest-rerunfailures", marker = "extra == 'dev'" },
+    { name = "pytest-rerunfailures", marker = "extra == 'test'" },
+    { name = "pytest-xdist", marker = "extra == 'dev'" },
+    { name = "pytest-xdist", marker = "extra == 'test'" },
+    { name = "rich" },
+    { name = "scikit-learn", marker = "extra == 'dev'" },
+    { name = "scikit-learn", marker = "extra == 'scikit'" },
+    { name = "transformers", specifier = ">=4.46.0" },
+    { name = "vllm", marker = "sys_platform != 'win32' and extra == 'dev'" },
+    { name = "vllm", marker = "sys_platform != 'win32' and extra == 'vllm'" },
 ]
 
 [[package]]
