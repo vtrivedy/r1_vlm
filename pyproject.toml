@@ -4,4 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "datasets>=3.2.0",
+    "ipdb>=0.13.13",
+    "jinja2>=3.1.5",
+    "pycocotools>=2.0.8",
+    "python-dotenv>=1.0.1",
+    "qwen-vl-utils>=0.0.10",
+    # I need the latest version of transformers for qwen2.5vl, I should lock this down once they release a new version
+    "transformers @ git+https://github.com/huggingface/transformers.git@main",
+]
