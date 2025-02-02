@@ -84,4 +84,4 @@ trainer.train()
 # 4. []  Not worrying about the vllm stuff for now.
 # 5. []  What temperature are they using by default?
 # 6. []  Not worrying about deepspeed/multiple GPUs for now.
-# 7. []  Update compute_loss to do tokenization/collating, maybe we give the trainer a function that is called there.
+# 7. [x]  Update compute_loss to do tokenization/collating, maybe we give the trainer a function that is called there.
