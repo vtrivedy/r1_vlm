@@ -1,3 +1,4 @@
+import torch
 from datasets import load_dataset
 from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor
@@ -53,7 +54,8 @@ def collate_fn(examples):
 
     batch["labels"] = labels
 
-    # TOOD: what to do with targets?
+    # todo: is this right?
+    batch["targets"] = torch.tensor(targets)
 
     return batch
 
@@ -69,6 +71,7 @@ def test_collate():
     assert collated["input_ids"].shape == (bs, 405)
     assert collated["labels"].shape == (bs, 405)
     assert collated["attention_mask"].shape == (bs, 405)
+    assert collated["targets"].shape == (bs,)
 
 
 if __name__ == "__main__":

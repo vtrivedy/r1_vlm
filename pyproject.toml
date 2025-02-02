@@ -15,4 +15,5 @@ dependencies = [
     "torchvision>=0.21.0",
     # I need the latest version of transformers for qwen2.5vl, I should lock this down once they release a new version
     "transformers @ git+https://github.com/huggingface/transformers.git@main",
+    "trl>=0.14.0",
 ]
