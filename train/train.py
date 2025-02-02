@@ -41,10 +41,13 @@ processor = AutoProcessor.from_pretrained(
 # Hyperparameters
 training_args = GRPOConfig(
     output_dir="vlm-r1-aha-moment",
-    learning_rate=5e-7,
+    learning_rate=1e-5,
     lr_scheduler_type="cosine",
+    warmup_ratio=0.001,  # 0.1% of total steps will be warmup. 1M examples * 0.001 = 1000 steps
     logging_steps=1,
-    max_steps=100,
+    save_steps=100,
+    # roughly 1M total training steps
+    num_train_epochs=1,
     per_device_train_batch_size=1,
     gradient_accumulation_steps=1,
     gradient_checkpointing=True,
@@ -69,7 +72,7 @@ trainer = QwenGRPOTrainer(
     tokenize_and_inject_images=tokenize_and_inject_images,
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
-    peft_config=peft_config,
+    #    peft_config=peft_config,
 )
 
 trainer.train()
