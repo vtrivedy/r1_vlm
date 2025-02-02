@@ -15,10 +15,11 @@ def format_reward_func(completions, target, **kwargs):
     """
     rewards = []
 
-    for completion, gt in zip(completions, target):
+    for completion_conv, gt in zip(completions, target):
         try:
             # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion
+            completion = "<think>" + completion_conv[0]["content"]
+
             # Check if the format is correct
             regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
@@ -30,8 +31,9 @@ def format_reward_func(completions, target, **kwargs):
             else:
                 rewards.append(1.0)
         except Exception as e:
-            print(e)
+            print(f"Error in format_reward_func: {e}")
             rewards.append(0.0)
+
     return rewards
 
 
@@ -50,10 +52,11 @@ def answer_reward_func(completions, target, **kwargs):
 
     rewards = []
 
-    for completion, gt in zip(completions, target):
+    for completion_conv, gt in zip(completions, target):
         try:
             # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion
+            completion = "<think>" + completion_conv[0]["content"]
+
             # Check if the format is correct
             match = re.search(r"<answer>(.*?)<\/answer>", completion)
 
@@ -82,9 +85,14 @@ def answer_reward_func(completions, target, **kwargs):
                 rewards.append(0.0)
 
         except Exception as e:
-            print(e)
+            print(f"Error in answer_reward_func: {e}")
             rewards.append(0.0)
 
+    for completion_conv, target, reward in zip(completions, target, rewards):
+        print(f"Completion: \n {completion_conv[0]['content']}")
+        print(f"Target: {target}")
+        print(f"Reward: {reward}")
+        print("-" * 100)
     return rewards
 
 
