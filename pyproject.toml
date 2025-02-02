@@ -11,6 +11,8 @@ dependencies = [
     "pycocotools>=2.0.8",
     "python-dotenv>=1.0.1",
     "qwen-vl-utils>=0.0.10",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
     # I need the latest version of transformers for qwen2.5vl, I should lock this down once they release a new version
     "transformers @ git+https://github.com/huggingface/transformers.git@main",
 ]

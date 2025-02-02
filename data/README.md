@@ -1,0 +1,2 @@
+This directory contains scripts for creating the dataset used in this project. It builds the dataset
+incrementally, loading the intermediate datasets from Hugging Face Hub for inspection along the way.

@@ -35,17 +35,26 @@ def generate_r1_messages(example):
     r1_messages = [
         {
             "role": "system",
-            "content": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer.",
-        },
-        {
-            "type": "image",
-            "image": image_path,
+            "content": [
+                {
+                    "type": "text",
+                    "text": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer.",
+                }
+            ],
         },
         {
             "role": "user",
-            "content": operation_message,
+            "content": [
+                {"type": "image", "image": image_path},
+                {"type": "text", "text": operation_message},
+            ],
         },
-        {"role": "assistant", "content": "Let me solve this step by step.\n<think>"},
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": "Let me solve this step by step.\n<think>"}
+            ],
+        },
     ]
 
     return {"messages": r1_messages, "target": example["answer"]}
