@@ -8,6 +8,7 @@ dependencies = [
     "datasets>=3.2.0",
     "ipdb>=0.13.13",
     "jinja2>=3.1.5",
+    "peft>=0.14.0",
     "pycocotools>=2.0.8",
     "python-dotenv>=1.0.1",
     "qwen-vl-utils>=0.0.10",
@@ -15,7 +16,8 @@ dependencies = [
     "torchvision>=0.21.0",
     # I need the latest version of transformers for qwen2.5vl, I should lock this down once they release a new version
     "transformers @ git+https://github.com/huggingface/transformers.git@main",
-
-    # custom version of trl for this project
-    "trl @ file:///${PROJECT_ROOT}/trl_custom"
+    "trl",
 ]
+
+[tool.uv.sources]
+trl = { path = "../trl", editable = true }

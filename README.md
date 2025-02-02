@@ -16,6 +16,8 @@ See the dataset [here](https://huggingface.co/datasets/sunildkumar/coco-computat
 
 https://huggingface.co/learn/cookbook/en/fine_tuning_vlm_trl is super helpful for sample code on how to FT a Qwen2VL generally. 
 
+Custom fork of TRL for GRPO on VLMs: https://github.com/sunildkumar/trl. As of the time of writing, the latest version of GRPOTrainer does not support VLMs. 
+
 
 
 
