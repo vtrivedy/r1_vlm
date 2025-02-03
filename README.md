@@ -19,6 +19,8 @@ https://huggingface.co/learn/cookbook/en/fine_tuning_vlm_trl is super helpful fo
 Custom fork of TRL for GRPO on VLMs: https://github.com/sunildkumar/trl. As of the time of writing, the latest version of GRPOTrainer does not support VLMs. 
 
 
-
-
-
+Training:
+```
+# run from root of repo
+uv run accelerate launch --config_file train/multi_gpu.yaml  train/train.py
+```
