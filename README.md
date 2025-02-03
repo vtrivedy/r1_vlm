@@ -8,7 +8,7 @@ on a toy problem. As far as I know, no one has tried this on a VLM. My idea is t
 dataset (not unlike the counting game in the blog post) and see if a VLM can do it.
 
 ## Dataset
-Using the COCO dataset, I've generate a dataset of computation problems. For each image, I ask it to {add, subtract, multiply, divide}
+Using the COCO dataset, I've generate a dataset of visual computation problems. For each image, I ask it to {add, subtract, multiply, divide}
 the counts of two classes that are present in the image. For example, "Multiply the number of dogs by the number of cats in the image".
 
 See the dataset [here](https://huggingface.co/datasets/sunildkumar/coco-computation-r1).
