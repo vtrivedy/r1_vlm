@@ -41,9 +41,9 @@ processor = AutoProcessor.from_pretrained(
 # Hyperparameters
 training_args = GRPOConfig(
     output_dir="vlm-r1-aha-moment",
-    learning_rate=1e-5,
+    learning_rate=5e-7,
     lr_scheduler_type="cosine",
-    warmup_ratio=0.001,  # 0.1% of total steps will be warmup. 1M examples * 0.001 = 1000 steps
+    warmup_ratio=0.001,  #  1M examples * 0.001 = 1000 steps
     logging_steps=1,
     save_steps=100,
     # roughly 1M total training steps
@@ -57,13 +57,12 @@ training_args = GRPOConfig(
     # TOOD: Make sure these are right
     max_prompt_length=1024,
     max_completion_length=1024,  # max length of the generated output for our solution
-    num_generations=2,
+    num_generations=5,
     beta=0.001,
     # TODO: True? using vllm seems like a good idea.
     use_vllm=False,
     report_to="wandb",
 )
-
 trainer = QwenGRPOTrainer(
     model=model,
     reward_funcs=[format_reward_func, answer_reward_func],
