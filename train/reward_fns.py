@@ -1,6 +1,7 @@
 import re
 
 # https://www.philschmid.de/mini-deepseek-r1#3-train-the-model-using-grpo-educational-part was the best reference for this
+import numpy as np
 
 
 def format_reward_func(completions, target, **kwargs):
@@ -83,6 +84,60 @@ def answer_reward_func(completions, target, **kwargs):
                 rewards.append(1.0)
             else:
                 rewards.append(0.0)
+
+        except Exception as e:
+            print(f"Error in answer_reward_func: {e}")
+            rewards.append(0.0)
+
+    return rewards
+
+
+def soft_reward_func(completions, target, **kwargs):
+    """
+    Evaluates completions based on mathematical correctness of the answer.
+    Uses an exponential function to reward correct answers, and penalize incorrect answers based on the error between the answer and the target.
+
+    Args:
+        completions (list[str]): Generated outputs
+        target (list[str]): Expected answers
+        nums (list[str]): Available numbers
+
+    Returns:
+        list[float]: Reward scores
+    """
+
+    rewards = []
+
+    for completion_conv, gt in zip(completions, target):
+        try:
+            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
+            completion = "<think>" + completion_conv[0]["content"]
+
+            # Check if the format is correct
+            match = re.search(r"<answer>(.*?)<\/answer>", completion)
+
+            if match is None:
+                rewards.append(0.0)
+                continue
+
+            answer = match.group(1).strip()
+
+            # Define a regex pattern that only allows numbers, period, and whitespace
+            allowed_pattern = r"^[\d\s.]+$"
+            if not re.match(allowed_pattern, answer):
+                rewards.append(0.0)
+                continue
+
+            # check if float(answer) == gt (target is already a float)
+            assert isinstance(gt, float), "target is not a float but a %s" % type(gt)
+
+            # convert answer to float
+            answer = float(answer)
+
+            error = abs(answer - gt)
+
+            reward = np.exp(-1 * np.abs(error))
+            rewards.append(reward)
 
         except Exception as e:
             print(f"Error in answer_reward_func: {e}")

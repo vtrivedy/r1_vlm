@@ -2,7 +2,7 @@ import trl
 from datasets import load_dataset
 from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
-from reward_fns import answer_reward_func, format_reward_func
+from reward_fns import answer_reward_func, format_reward_func, soft_reward_func
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer import QwenGRPOTrainer
@@ -65,7 +65,7 @@ training_args = GRPOConfig(
 )
 trainer = QwenGRPOTrainer(
     model=model,
-    reward_funcs=[format_reward_func, answer_reward_func],
+    reward_funcs=[format_reward_func, answer_reward_func, soft_reward_func],
     processing_class=processor,
     args=training_args,
     tokenize_and_inject_images=tokenize_and_inject_images,
@@ -82,5 +82,5 @@ trainer.train()
 # 3. [x]  what the heck is reward_processing_classes - not relevant as we aren't using model as reward function
 # 4. []  Not worrying about the vllm stuff for now.
 # 5. []  What temperature are they using by default?
-# 6. []  Not worrying about deepspeed/multiple GPUs for now.
+# 6. [x]  Not worrying about deepspeed/multiple GPUs for now - multi gpu now supported
 # 7. [x]  Update compute_loss to do tokenization/collating, maybe we give the trainer a function that is called there.
