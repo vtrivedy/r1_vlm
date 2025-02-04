@@ -36,7 +36,7 @@ def print_reward(
         prompt_cleaned = re.sub(
             r"(<\|image_pad\|>)+", "{... many image pad tokens ...}", prompt
         )
-
+        print(f"Function name: {function_name}")
         print(f"Sample {idx + 1}:")
         print(f"Prompt:\n{prompt_cleaned}")
         print(f"Completion:\n{completion_conv[0]['content']}")
@@ -163,34 +163,19 @@ def soft_answer_reward_func(completions, target, **kwargs):
 
             error = abs(answer - gt)
 
-            sigma = 5
+            sigma = 2
             exponent = -1 * (error**2)
             exponent = exponent / (sigma**2)
 
             reward = np.exp(exponent)
+            # convert from np.float64 to python float
+            reward = float(reward)
 
             rewards.append(reward)
 
         except Exception as e:
             print(f"Error in answer_reward_func: {e}")
             rewards.append(0.0)
-    for prompt, completion_conv, gt, reward, class_1 in zip(
-        kwargs["prompts"],
-        completions,
-        target,
-        rewards,
-        kwargs["class_1"],
-    ):
-        # Replace the entire sequence of padding tokens with a single placeholder
-        prompt_cleaned = re.sub(
-            r"(<\|image_pad\|>)+", "{... many image pad tokens ...}", prompt
-        )
-        print(f"Prompt: \n {prompt_cleaned}")
-        print(f"Completion: \n {completion_conv[0]['content']}")
-        print(f"Target: {gt}")
-        print(f"Reward: {reward}")
-        print(f"Class 1: {class_1}")
-        print("-" * 100)
     # Print results using print_reward function
     print_reward(
         "soft_answer_reward_func",
@@ -208,7 +193,7 @@ def soft_answer_reward_func(completions, target, **kwargs):
 def bounding_box_reward_func(completions, target, **kwargs):
     """
     Gives a reward for each bounding box/keypoint in the completion.
-    Reward is min(1, total boxes/keypoints detected / (target))
+    Reward is min(1, total boxes+keypoints detected / (target))
 
     Args:
         completions (list[str]): Generated outputs
@@ -220,18 +205,25 @@ def bounding_box_reward_func(completions, target, **kwargs):
 
     for completion_conv, gt in zip(completions, target):
         try:
-            completion = completion_conv[0]["content"]
+            completion = "<think>" + completion_conv[0]["content"]
 
-            # Extract bounding boxes and keypoints from the completion
+            # Extract content between think tags
+            think_match = re.search(r"<think>(.*?)</think>", completion, re.DOTALL)
+            if not think_match:
+                rewards.append(0.0)
+                continue
+
+            think_content = think_match.group(1)
+
+            # Extract bounding boxes and keypoints from the think content
             bbox_matches = re.findall(
-                r'{"bbox_2d": \[(.*?)\], "label": "(.*?)"}', completion
+                r'{"bbox_2d": \[(.*?)\], "label": "(.*?)"}', think_content
             )
             keypoint_matches = re.findall(
-                r'{"point_2d": \[(.*?)\], "label": "(.*?)"}', completion
+                r'{"point_2d": \[(.*?)\], "label": "(.*?)"}', think_content
             )
 
             total_detected = len(bbox_matches) + len(keypoint_matches)
-
             reward = min(1, total_detected / gt)
             rewards.append(reward)
         except Exception as e:
@@ -244,7 +236,7 @@ def bounding_box_reward_func(completions, target, **kwargs):
         completions,
         target,
         rewards,
-        ["count_1", "count_2"],
+        ["class_1"],
         kwargs,
     )
     return rewards
