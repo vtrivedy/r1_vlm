@@ -2,7 +2,12 @@ import trl
 from datasets import load_dataset
 from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
-from reward_fns import answer_reward_func, format_reward_func, soft_reward_func
+from reward_fns import (
+    answer_reward_func,
+    bounding_box_presence_reward_func,
+    format_reward_func,
+    soft_answer_reward_func,
+)
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer import QwenGRPOTrainer
@@ -49,7 +54,7 @@ training_args = GRPOConfig(
     # roughly 1M total training steps
     num_train_epochs=1,
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=1,
+    gradient_accumulation_steps=4,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"use_reentrant": False},
     bf16=True,
@@ -65,7 +70,12 @@ training_args = GRPOConfig(
 )
 trainer = QwenGRPOTrainer(
     model=model,
-    reward_funcs=[format_reward_func, answer_reward_func, soft_reward_func],
+    reward_funcs=[
+        format_reward_func,
+        answer_reward_func,
+        soft_answer_reward_func,
+        bounding_box_presence_reward_func,
+    ],
     processing_class=processor,
     args=training_args,
     tokenize_and_inject_images=tokenize_and_inject_images,

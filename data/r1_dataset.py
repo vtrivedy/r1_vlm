@@ -58,7 +58,14 @@ def generate_r1_messages(example):
         },
     ]
 
-    return {"messages": r1_messages, "target": example["answer"]}
+    return {
+        "messages": r1_messages,
+        "target": example["answer"],
+        "class_1": example["class_1"],
+        "class_2": example["class_2"],
+        "count_1": example["count_1"],
+        "count_2": example["count_2"],
+    }
 
 
 def create_r1_dataset():
