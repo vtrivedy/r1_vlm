@@ -50,7 +50,7 @@ training_args = GRPOConfig(
     lr_scheduler_type="cosine",
     warmup_ratio=0.001,  #  1M examples * 0.001 = 1000 steps
     logging_steps=1,
-    save_steps=100,
+    save_steps=1,
     # roughly 1M total training steps
     num_train_epochs=1,
     per_device_train_batch_size=1,

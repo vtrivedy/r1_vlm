@@ -7,10 +7,7 @@ from counting_reward_fns import (
 from datasets import load_dataset
 from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
-from reward_fns import (
-    answer_reward_func,
-    soft_answer_reward_func,
-)
+from reward_fns import format_reward_func
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer import QwenGRPOTrainer
@@ -50,12 +47,12 @@ processor = AutoProcessor.from_pretrained(
 
 # Hyperparameters
 training_args = GRPOConfig(
-    output_dir="vlm-r1-aha-moment",
+    output_dir="vlm-r1-aha-moment-counting-only",
     learning_rate=5e-7,
     lr_scheduler_type="cosine",
     warmup_steps=25,
     logging_steps=1,
-    save_steps=1,
+    save_steps=5,
     # roughly 1M total training steps
     num_train_epochs=1,
     per_device_train_batch_size=1,
@@ -68,7 +65,7 @@ training_args = GRPOConfig(
     # TOOD: Make sure these are right
     max_prompt_length=1024,
     max_completion_length=1024,  # max length of the generated output for our solution
-    num_generations=7,
+    num_generations=5,
     beta=0.001,
     # TODO: True? using vllm seems like a good idea.
     use_vllm=False,
@@ -82,6 +79,7 @@ trainer = QwenGRPOTrainer(
         answer_reward_func,
         soft_answer_reward_func,
         bounding_box_reward_func,
+        format_reward_func,
     ],
     processing_class=processor,
     args=training_args,
@@ -90,3 +88,5 @@ trainer = QwenGRPOTrainer(
     eval_dataset=dataset["validation"],
     #    peft_config=peft_config,
 )
+
+trainer.train()
