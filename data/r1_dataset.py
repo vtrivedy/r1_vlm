@@ -7,6 +7,7 @@ from transformers import AutoProcessor
 
 load_dotenv(dotenv_path=find_dotenv())
 
+
 # Load processor and set paths
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct")
 base_image_path = "/millcreek/data/academic/coco"
@@ -38,7 +39,7 @@ def generate_r1_messages(example):
             "content": [
                 {
                     "type": "text",
-                    "text": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer.",
+                    "text": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer. Remember you have visual grounding capabilities and you can output bbox coordinates or key points in JSON format. You should not attempt to count without using visual grounding.",
                 }
             ],
         },
