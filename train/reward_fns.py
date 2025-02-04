@@ -203,9 +203,6 @@ def bounding_box_presence_reward_func(completions, target, **kwargs):
 
             rewards.append(reward)
         except Exception as e:
-            import ipdb
-
-            ipdb.set_trace()
             print(f"Error in bounding_box_presence_reward_func: {e}")
             rewards.append(0.0)
 
