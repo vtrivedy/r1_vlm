@@ -62,7 +62,7 @@ training_args = GRPOConfig(
     # TOOD: Make sure these are right
     max_prompt_length=1024,
     max_completion_length=1024,  # max length of the generated output for our solution
-    num_generations=5,
+    num_generations=7,
     beta=0.001,
     # TODO: True? using vllm seems like a good idea.
     use_vllm=False,

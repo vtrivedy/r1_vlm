@@ -142,13 +142,26 @@ def soft_answer_reward_func(completions, target, **kwargs):
         except Exception as e:
             print(f"Error in answer_reward_func: {e}")
             rewards.append(0.0)
-
-    for completion_conv, gt, reward in zip(completions, target, rewards):
+    for prompt, completion_conv, gt, reward, class_1, class_2, count_1, count_2 in zip(
+        kwargs["prompts"],
+        completions,
+        target,
+        rewards,
+        kwargs["class_1"],
+        kwargs["class_2"],
+        kwargs["count_1"],
+        kwargs["count_2"],
+    ):
+        # Replace the entire sequence of padding tokens with a single placeholder
+        prompt_cleaned = re.sub(
+            r"(<\|image_pad\|>)+", "{... many image pad tokens ...}", prompt
+        )
+        print(f"Prompt: \n {prompt_cleaned}")
         print(f"Completion: \n {completion_conv[0]['content']}")
-        print(f"Class 1: {kwargs['class_1']}, {kwargs['count_1']}")
-        print(f"Class 2: {kwargs['class_2']}, {kwargs['count_2']}")
         print(f"Target: {gt}")
         print(f"Reward: {reward}")
+        print(f"Class 1: {class_1}, {count_1}")
+        print(f"Class 2: {class_2}, {count_2}")
         print("-" * 100)
     return rewards
 

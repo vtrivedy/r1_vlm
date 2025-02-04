@@ -29,9 +29,10 @@ def generate_r1_messages(example):
     elif operation == "divide":
         operation_message = f"For this image, divide the number of {example['class_1']} by the number of {example['class_2']}. "
 
-    # add standard ending to the message
-    ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. If the answer is not an integer, truncate it to 2 decimal places."
-    operation_message += ending
+    # add standard ending and grounding reminder to the message
+    ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. If the answer is not an integer, truncate it to 2 decimal places. "
+    grounding = 'Remember you have visual grounding capabilities and you can output bbox coordinates or key points in JSON format. Bbox example: {"bbox_2d": [74, 58, 526, 619], "label": "person"}. Keypoint example: {"point_2d": ["38", "314"], "label": "person"}. You should NOT attempt to count without using visual grounding as it is not accurate.'
+    operation_message += ending + grounding
 
     r1_messages = [
         {
@@ -39,7 +40,7 @@ def generate_r1_messages(example):
             "content": [
                 {
                     "type": "text",
-                    "text": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer. Remember you have visual grounding capabilities and you can output bbox coordinates or key points in JSON format. You should not attempt to count without using visual grounding.",
+                    "text": "You are a helpful assistant. You first think about the reasoning process in the mind and then provides the user with the answer.",
                 }
             ],
         },
