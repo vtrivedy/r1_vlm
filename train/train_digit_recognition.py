@@ -72,7 +72,7 @@ training_args = GRPOConfig(
     num_train_epochs=1,
     # I've heard I shouldn't increase this due to a bug. 
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=1,
+    gradient_accumulation_steps=4,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"use_reentrant": False},
     bf16=True,
