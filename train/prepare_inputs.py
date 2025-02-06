@@ -79,8 +79,6 @@ def test_tokenizing(conversations):
         input_ids = batch["input_ids"]
         num_image_tokens = (input_ids == 151655).sum().item()
         print(f"pixels: {pixels}, num_image_tokens: {num_image_tokens}")
-        
-    import ipdb; ipdb.set_trace()
     print('done with test_tokenizing')
 
     
