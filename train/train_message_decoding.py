@@ -63,8 +63,7 @@ training_args = GRPOConfig(
     # GRPO specific parameters
     max_prompt_length=1024,
     max_completion_length=512,
-    # INCREASE TO 8
-    num_generations=2,
+    num_generations=8,
     beta=0.001,
     use_vllm=False,
     report_to="wandb",
