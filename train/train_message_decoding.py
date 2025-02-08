@@ -54,7 +54,8 @@ training_args = GRPOConfig(
     save_steps=20,
     # ckpts are 51 gb each!!
     save_total_limit=50,
-    num_train_epochs=1,
+    # This is a harder tasks, so bumped epochs 1 -> 3
+    num_train_epochs=3,
     # I've heard I shouldn't increase this due to a bug.
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
