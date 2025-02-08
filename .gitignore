@@ -179,3 +179,4 @@ cython_debug/
 /vlm-r1-digit-recognition-run-1
 # folder with the data for counting mnist
 counting-mnist/
+dataset/*

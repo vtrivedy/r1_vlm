@@ -62,7 +62,6 @@ peft_config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
-# set the minimum pixels and maximum pixels to this value == 529 image tokens per image.
 pixels = 224 * 224
 processor = AutoProcessor.from_pretrained(
     "Qwen/Qwen2-VL-2B-Instruct", padding_side="left", min_pixels=pixels, max_pixels=pixels
