@@ -70,6 +70,9 @@ def answer_reward_func(completions, target, **kwargs):
     rewards = []
 
     for completion_conv, gt in zip(completions, target):
+        if type(gt) != int:
+            raise ValueError(f"Target is not an int: {gt}! This is unexpected.")
+        
         try:
             # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
             completion = "<think>" + completion_conv[0]["content"]
@@ -88,8 +91,6 @@ def answer_reward_func(completions, target, **kwargs):
             if not re.match(allowed_pattern, answer):
                 rewards.append(0.0)
                 continue
-
-            assert isinstance(gt, int), "target is not an int but a %s" % type(gt)
             
             
             # convert to floats for comparison
