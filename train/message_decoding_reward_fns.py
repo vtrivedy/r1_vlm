@@ -100,12 +100,6 @@ def format_reward_func(completions, **kwargs):
     return rewards
 
 
-def answer_reward_func(completions, **kwargs):
-    """
-    Returns edit distance
-    """
-
-
 def levenshtein_distance(s1: str, s2: str) -> int:
     """
     Returns the edit distance between two strings.
@@ -170,6 +164,50 @@ def soft_edit_distance_reward(completions, **kwargs):
     if PRINT_RESULTS:
         print_reward(
             function_name="soft_edit_distance_reward",
+            prompts=kwargs["prompts"],
+            completions=completions,
+            target=targets,
+            rewards=rewards,
+            additional_fields=["coded_message", "decoded_message", "mapping"],
+            reward_function_kwargs=kwargs,
+        )
+
+    return rewards
+
+
+def answer_reward_func(completions, **kwargs):
+    """
+    Rewards for the exact match of the decoded message
+    """
+    PRINT_RESULTS = True
+
+    rewards = []
+    targets = kwargs["decoded_message"]
+
+    for completion_conv, target in zip(completions, targets):
+        try:
+            # Extract answer: requires the predicted decoded message is within <answer>...</answer>
+            completion = "<think>" + completion_conv[0]["content"]
+            match = re.search(r"<answer>(.*?)<\/answer>", completion)
+
+            if match is None:
+                rewards.append(0.0)
+                continue
+            predicted = match.group(1).strip()
+            # Remove any non-letter/non-space characters from prediction
+            predicted = re.sub(r"[^A-Za-z\s]", "", predicted)
+
+            if predicted == target:
+                rewards.append(1.0)
+            else:
+                rewards.append(0.0)
+        except Exception as e:
+            print(f"Error in answer_reward_func: {e}")
+            rewards.append(0.0)
+
+    if PRINT_RESULTS:
+        print_reward(
+            function_name="answer_reward_func",
             prompts=kwargs["prompts"],
             completions=completions,
             target=targets,

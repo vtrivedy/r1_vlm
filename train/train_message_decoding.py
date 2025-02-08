@@ -1,6 +1,6 @@
 import trl
 from datasets import load_dataset
-from message_decoding_reward_fns import format_reward_func, soft_edit_distance_reward
+from message_decoding_reward_fns import answer_reward_func, format_reward_func
 from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
@@ -76,7 +76,7 @@ trainer = QwenGRPOTrainer(
     model=model,
     reward_funcs=[
         format_reward_func,
-        soft_edit_distance_reward,
+        answer_reward_func,
     ],
     processing_class=processor,
     args=training_args,
