@@ -43,6 +43,13 @@ def create_curriculum_lr_lambda(transition_steps):
             and returns a learning rate multiplier between 0 and 1
     """
     def lr_lambda(current_step):
+        
+        # if current step is greater than the last transition step, return a scaling factor of 0.0
+        # this is to fix a boundary case on the last step of training.
+        if current_step >= transition_steps[-1]:
+            print(f"Current step {current_step} is greater than the last transition step {transition_steps[-1]}, so returning 0.0 for lr_lambda")
+            return 0.0
+        
         dataset_idx = np.searchsorted(transition_steps[1:], current_step, side='right')
         steps_in_current_dataset = current_step - transition_steps[dataset_idx]
         segment_length = transition_steps[dataset_idx + 1] - transition_steps[dataset_idx]
