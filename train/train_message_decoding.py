@@ -22,7 +22,7 @@ model_config = ModelConfig(
 )
 
 model = Qwen2VLForConditionalGeneration.from_pretrained(
-    pretrained_model_name_or_path=model_config.model_name_or_path,
+    pretrained_model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding/checkpoint-540",
     torch_dtype=model_config.torch_dtype,
     # has to be set to false for gradient checkpointing to work
     use_cache=False,
@@ -39,6 +39,11 @@ peft_config = LoraConfig(
     task_type="CAUSAL_LM",
 )
 
+# Up the grad norm from 2 -> 10
+# Reduce beta from 0.001 -> 0.0001
+# Increase grad accumulation from 4 to 8.
+# decrease adam_beta2 from 0.999  to 0.98
+
 
 # NOTE: Not setting min/max pixels here unlike in digit recognition. All the images are 300x300 and should get tokenized at that resolution.
 processor = AutoProcessor.from_pretrained(
@@ -46,10 +51,11 @@ processor = AutoProcessor.from_pretrained(
 )
 
 training_args = GRPOConfig(
-    output_dir="vlm-r1-message-decoding",
+    output_dir="vlm-r1-message-decoding-restart",
     learning_rate=1e-6,
+    max_grad_norm=2.0,
     lr_scheduler_type="cosine",
-    warmup_steps=0,
+    warmup_steps=25,
     logging_steps=1,
     save_steps=20,
     # ckpts are 51 gb each!!
