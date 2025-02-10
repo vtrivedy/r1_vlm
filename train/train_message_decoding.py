@@ -51,9 +51,10 @@ processor = AutoProcessor.from_pretrained(
 )
 
 training_args = GRPOConfig(
-    output_dir="vlm-r1-message-decoding-restart",
+    output_dir="vlm-r1-message-decoding-restart-with-more-aggressive-params",
     learning_rate=1e-6,
-    max_grad_norm=2.0,
+    adam_beta2=0.98,
+    max_grad_norm=10.0,
     lr_scheduler_type="cosine",
     warmup_steps=25,
     logging_steps=1,
@@ -64,14 +65,14 @@ training_args = GRPOConfig(
     num_train_epochs=3,
     # I've heard I shouldn't increase this due to a bug.
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=4,
+    gradient_accumulation_steps=8,
     gradient_checkpointing=False,
     bf16=True,
     # GRPO specific parameters
     max_prompt_length=1024,
     max_completion_length=512,
     num_generations=8,
-    beta=0.001,
+    beta=0.0001,
     use_vllm=False,
     report_to="wandb",
     # R1-V suggestion
