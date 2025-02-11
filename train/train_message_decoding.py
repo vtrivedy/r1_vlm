@@ -22,7 +22,7 @@ model_config = ModelConfig(
 )
 
 model = Qwen2VLForConditionalGeneration.from_pretrained(
-    pretrained_model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding/checkpoint-540",
+    pretrained_model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-restart/checkpoint-60",
     torch_dtype=model_config.torch_dtype,
     # has to be set to false for gradient checkpointing to work
     use_cache=False,
