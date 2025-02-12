@@ -1,9 +1,14 @@
+import os
+
 import trl
 from datasets import load_dataset
 from digit_recognition_reward_fns import answer_reward_func, format_reward_func
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
-from trl.qwen_grpo_trainer import QwenGRPOTrainer
+from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
+
+os.environ["WANDB_ENTITY"] = "groundlightai"
+os.environ["WANDB_PROJECT"] = "digit-recognition-new-trainer"
 
 print(trl.__file__)
 
@@ -39,7 +44,7 @@ processor = AutoProcessor.from_pretrained(
 )
 
 training_args = GRPOConfig(
-    output_dir="vlm-r1-digit-recognition",
+    output_dir="vlm-r1-digit-recognition-new-trainer",
     learning_rate=1e-6,
     lr_scheduler_type="cosine",
     warmup_steps=0,
@@ -48,25 +53,31 @@ training_args = GRPOConfig(
     # ckpts are 51 gb each!!
     save_total_limit=50,
     num_train_epochs=1,
-    # I've heard I shouldn't increase this due to a bug.
-    per_device_train_batch_size=1,
+    # represents the number of generations per device
+    per_device_train_batch_size=2,
+    # number of generations total
+    num_generations=2,
     gradient_accumulation_steps=4,
-    gradient_checkpointing=False,
+    # Turning this on...
+    gradient_checkpointing=True,
     bf16=True,
     # GRPO specific parameters
-    # TOOD: Make sure these are right
     max_prompt_length=1024,
     max_completion_length=512,  # max length of the generated output for our solution
-    num_generations=8,
     beta=0.001,
     use_vllm=False,
     report_to="wandb",
     # R1-V suggestion
     temperature=1.0,
+    # sync the reference model every so often
+    sync_ref_model=True,
+    eval_strategy="no",
+    log_completions=True,
 )
 
 trainer = QwenGRPOTrainer(
     model=model,
+    processing_class=processor,
     reward_funcs=[
         format_reward_func,
         answer_reward_func,
@@ -76,13 +87,16 @@ trainer = QwenGRPOTrainer(
     eval_dataset=eval_dataset,
 )
 
-trainer.train()
+# trainer.train()
 # TODOS:
+# [] - the section per_device_train/eval_batch_size * num processes can be divided by the number of generations seems a bit worrying. It might limit num_generations to 4?
+# [] - inject images into the input at the top of _prepare_inputs
+# [] - add logging metrics suggested by tyler
 # [] -
 
-
 # GOALS:
-# [In progress] - Branch off of TRL main (again) with the new version of their trainer. Get 2B training off of it on digits.
+# [In progress] - Branch off of TRL main (again) with the new version of their trainer. Get 2B training off of it on digits on a single GPU.
+# [TODO] - Get 2B training off of it on digits on multiple GPUs - either zero2 or zero3.
 # [TODO] - Get 7B model training on digits task - maybe zero3 if necessary? Prove we can solve it to prove the code works.
 # [TODO] - Get VLLM working. It should make the generation step a whole lot faster and thus training faster.
 # [TODO] - Try the decoding task again.
