@@ -19,14 +19,11 @@ def random_mapping(alphabet):
 
 
 def get_font(size):
-    """Get a font that supports Unicode arrows"""
-    font_path = Path("fonts/NotoSansSymbols-Regular.ttf")
-    if font_path:
-        try:
-            return ImageFont.truetype(font_path, size)
-        except Exception as e:
-            print(f"Error loading font: {e}")
-            raise e
+    """Returns the font for the message decoding dataset."""
+    font_path = Path(__file__).parent / "fonts" / "NotoSansSymbols-Regular.ttf"
+    if not font_path.exists():
+        raise FileNotFoundError(f"Font file not found: {font_path.resolve()}")
+    return ImageFont.truetype(font_path, size)
 
 
 def generate_decoder_image(
@@ -180,8 +177,7 @@ def create_dataset(
 
 # Example usage:
 if __name__ == "__main__":
-    # Create the dataset
-    dataset = create_dataset()
+    dataset = create_dataset(base_dir="data/message_decoding/dataset")
 
     api = HfApi()
     repo_id = "sunildkumar/message-decoding-dataset"
@@ -192,4 +188,5 @@ if __name__ == "__main__":
     # Upload the dataset directory containing the images subdirectory
     # if this fails, try uploading with cli.
     # uv run huggingface-cli upload-large-folder "sunildkumar/message-decoding-dataset" "dataset" --repo-type=dataset --no-bars --no-reports
-    # api.upload_large_folder(folder_path="dataset", repo_id=repo_id, repo_type="dataset")
+    # UPDATE: The HF API won't stop rate limiting me... 
+    #api.upload_large_folder(folder_path="data/message_decoding/dataset", repo_id=repo_id, repo_type="dataset")

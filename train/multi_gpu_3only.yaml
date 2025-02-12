@@ -10,6 +10,9 @@ deepspeed_config:
       pin_memory: true
   bf16:
     enabled: true
+  activation_checkpointing:
+    partition_activations: true
+    contiguous_memory_optimization: true
 downcast_bf16: 'no'
 enable_cpu_affinity: false
 machine_rank: 0
