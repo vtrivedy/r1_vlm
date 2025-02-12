@@ -25,7 +25,7 @@ def print_reward(*,
     print(f"\nExecuting {function_name}")
     print("=" * 100)
 
-    for idx, (prompt, completion_conv, gt, reward) in enumerate(
+    for idx, (prompt, completion, gt, reward) in enumerate(
         zip(prompts, completions, target, rewards)
     ):
         # Clean up image padding tokens
@@ -35,7 +35,7 @@ def print_reward(*,
         print(f"Function name: {function_name}")
         print(f"Sample {idx + 1}:")
         print(f"Prompt:\n{prompt_cleaned}")
-        print(f"Completion:\n{completion_conv[0]['content']}")
+        print(f"Completion:\n{completion}")
         print(f"Target: {gt}")
         print(f"Reward: {reward}")
 
@@ -50,9 +50,6 @@ def print_reward(*,
         print("-" * 100)
 
 
-
-
-
 def format_reward_func(completions, **kwargs):
     """
     Format: <think>...</think><answer>...</answer>
@@ -64,16 +61,22 @@ def format_reward_func(completions, **kwargs):
           list[float]: Reward scores
     """
     
-    PRINT_RESULTS = False
+    PRINT_RESULTS = True
 
     rewards = []
+    completion_texts = []
     
     target = kwargs["label"] if kwargs['task'] == 'recognition' else kwargs['total']
 
     for completion_conv, gt in zip(completions, target):
         try:
-            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion_conv[0]["content"]
+            # includes the bootstrap prompt already
+            completion = completion_conv[0]["content"]
+
+            # remove anything before the first <think> tag (bootstrap prompt)
+            completion = re.search(r".*?(<think>[\s\S]*)", completion).group(1)
+
+            completion_texts.append(completion)
 
             # Check if the format is correct
             regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
@@ -88,13 +91,12 @@ def format_reward_func(completions, **kwargs):
         except Exception as e:
             print(f"Error in format_reward_func: {e}")
             rewards.append(0.0)
-    
 
     if PRINT_RESULTS:
         print_reward(
             function_name="format_reward_func",
-            prompts=kwargs["prompts"],
-            completions=completions,
+            prompts=kwargs["prompts_text"],
+            completions=completion_texts,
             target=target,
             rewards=rewards,
             additional_fields=["task", 'label', 'total'],

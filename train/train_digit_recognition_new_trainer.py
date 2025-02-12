@@ -3,6 +3,7 @@ import os
 import trl
 from datasets import load_dataset
 from digit_recognition_reward_fns import answer_reward_func, format_reward_func
+from prepare_inputs import tokenize_and_inject_images
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
@@ -54,9 +55,9 @@ training_args = GRPOConfig(
     save_total_limit=50,
     num_train_epochs=1,
     # represents the number of generations per device
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=8,
     # number of generations total
-    num_generations=2,
+    num_generations=8,
     gradient_accumulation_steps=4,
     # Turning this on...
     gradient_checkpointing=True,
@@ -71,6 +72,8 @@ training_args = GRPOConfig(
     temperature=1.0,
     # sync the reference model every so often
     sync_ref_model=True,
+    # how often to merge the reference model with the train model, default is 64
+    ref_model_sync_steps=64,
     eval_strategy="no",
     log_completions=True,
 )
@@ -82,15 +85,16 @@ trainer = QwenGRPOTrainer(
         format_reward_func,
         answer_reward_func,
     ],
+    tokenize_and_inject_images=tokenize_and_inject_images,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
 )
 
-# trainer.train()
+trainer.train()
 # TODOS:
-# [] - the section per_device_train/eval_batch_size * num processes can be divided by the number of generations seems a bit worrying. It might limit num_generations to 4?
-# [] - inject images into the input at the top of _prepare_inputs
+# [x] - the section per_device_train/eval_batch_size * num processes can be divided by the number of generations seems a bit worrying. It might limit num_generations to 4?
+# [x] - inject images into the input at the top of _prepare_inputs
 # [] - add logging metrics suggested by tyler
 # [] -
 
@@ -100,3 +104,6 @@ trainer = QwenGRPOTrainer(
 # [TODO] - Get 7B model training on digits task - maybe zero3 if necessary? Prove we can solve it to prove the code works.
 # [TODO] - Get VLLM working. It should make the generation step a whole lot faster and thus training faster.
 # [TODO] - Try the decoding task again.
+
+# NOTES:
+# The format of the data passed to the reward function has changed. It now includes the "bootstrap" prompt as well. 
