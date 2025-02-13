@@ -43,6 +43,12 @@ CUDA_VISIBLE_DEVICES=1 uv run train/train_digit_recognition_new_trainer.py
 
 CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
 
+# 7b zero3
+CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only_zero3.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
+
+# 7b zero2 offload
+CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only_zero2_offload.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
+
 ```
 
 ## Results
