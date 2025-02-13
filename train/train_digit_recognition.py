@@ -1,19 +1,20 @@
+import torch
 import trl
-from datasets import load_dataset
+from curriculum_utils import (
+    calculate_curriculum_steps,
+    create_curriculum_lr_lambda,
+    plot_lr_schedule,
+)
+from datasets import concatenate_datasets, load_dataset
+from digit_recognition_reward_fns import answer_reward_func, format_reward_func
 from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
-from digit_recognition_reward_fns import format_reward_func, answer_reward_func
+from torch.optim.lr_scheduler import LambdaLR
+from torch.utils.data import SequentialSampler
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer import QwenGRPOTrainer
-from datasets import concatenate_datasets
-from torch.utils.data import SequentialSampler
-import math
-from torch.optim.lr_scheduler import LambdaLR
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from curriculum_utils import calculate_curriculum_steps, create_curriculum_lr_lambda, plot_lr_schedule
+
 print(trl.__file__)
 
 
@@ -35,7 +36,9 @@ digits_3_train, digits_3_eval = split_3["train"], split_3["test"]
 train_dataset = concatenate_datasets([digits_1_train, digits_2_train, digits_3_train])
 eval_dataset = concatenate_datasets([digits_1_eval, digits_2_eval, digits_3_eval])
 
-print(f"There are {len(train_dataset)} training examples and {len(eval_dataset)} eval examples.")
+print(
+    f"There are {len(train_dataset)} training examples and {len(eval_dataset)} eval examples."
+)
 
 # load the model
 model_config = ModelConfig(
@@ -64,7 +67,10 @@ peft_config = LoraConfig(
 
 pixels = 224 * 224
 processor = AutoProcessor.from_pretrained(
-    "Qwen/Qwen2-VL-2B-Instruct", padding_side="left", min_pixels=pixels, max_pixels=pixels
+    "Qwen/Qwen2-VL-2B-Instruct",
+    padding_side="left",
+    min_pixels=pixels,
+    max_pixels=pixels,
 )
 
 # Hyperparameters
@@ -76,9 +82,9 @@ training_args = GRPOConfig(
     logging_steps=1,
     save_steps=20,
     # ckpts are 51 gb each!!
-    save_total_limit= 50,
+    save_total_limit=50,
     num_train_epochs=1,
-    # I've heard I shouldn't increase this due to a bug. 
+    # I've heard I shouldn't increase this due to a bug.
     per_device_train_batch_size=1,
     gradient_accumulation_steps=4,
     gradient_checkpointing=False,
@@ -92,22 +98,23 @@ training_args = GRPOConfig(
     use_vllm=False,
     report_to="wandb",
     # R1-V suggestion
-    temperature=1.0, 
+    temperature=1.0,
 )
 
 # Setup curriculum learning
 dataset_sizes = [len(digits_1_train), len(digits_2_train), len(digits_3_train)]
 num_gpus = torch.cuda.device_count()
 transition_steps = calculate_curriculum_steps(
-    dataset_sizes, 
-    training_args.per_device_train_batch_size, 
+    dataset_sizes,
+    training_args.per_device_train_batch_size,
     training_args.gradient_accumulation_steps,
-    num_gpus
+    num_gpus,
 )
 curriculum_lr_lambda = create_curriculum_lr_lambda(transition_steps)
 
 # Visualize the schedule
 plot_lr_schedule(transition_steps, curriculum_lr_lambda)
+
 
 # turn off shuffling so the model sees the data in increasing difficulty order
 class NoShuffleQwenGRPOTrainer(QwenGRPOTrainer):
@@ -117,11 +124,12 @@ class NoShuffleQwenGRPOTrainer(QwenGRPOTrainer):
 
     def _get_train_sampler(self):
         return SequentialSampler(self.train_dataset)
-    
+
     def create_scheduler(self, num_training_steps, optimizer=None):
         optimizer = self.optimizer if optimizer is None else optimizer
         self.lr_scheduler = LambdaLR(optimizer, self.lr_lambda)
         return self.lr_scheduler
+
 
 trainer = NoShuffleQwenGRPOTrainer(
     model=model,

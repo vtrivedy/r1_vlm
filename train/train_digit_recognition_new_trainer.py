@@ -2,7 +2,11 @@ import os
 
 import torch
 import trl
-from curriculum_utils import calculate_curriculum_steps, create_curriculum_lr_lambda
+from curriculum_utils import (
+    calculate_curriculum_steps,
+    create_curriculum_lr_lambda,
+    plot_lr_schedule,
+)
 from datasets import concatenate_datasets, load_dataset
 from digit_recognition_reward_fns import answer_reward_func, format_reward_func
 from prepare_inputs import tokenize_and_inject_images
@@ -30,6 +34,7 @@ split_3 = digits_3.train_test_split(test_size=0.1, seed=42)
 digits_1_train, digits_1_eval = split_1["train"], split_1["test"]
 digits_2_train, digits_2_eval = split_2["train"], split_2["test"]
 digits_3_train, digits_3_eval = split_3["train"], split_3["test"]
+
 
 train_dataset = concatenate_datasets([digits_1_train, digits_2_train, digits_3_train])
 eval_dataset = concatenate_datasets([digits_1_eval, digits_2_eval, digits_3_eval])
@@ -110,11 +115,13 @@ dataset_sizes = [len(digits_1_train), len(digits_2_train), len(digits_3_train)]
 num_gpus = torch.cuda.device_count()
 transition_steps = calculate_curriculum_steps(
     dataset_sizes,
-    training_args.per_device_train_batch_size,
+    1,  # the per device batch size - manually setting this here because the value in args is not what it seems
     training_args.gradient_accumulation_steps,
-    num_gpus,
+    1,  # the number of GPUs isn't relevant here (I think??) because of the change to generation setup.
 )
+print(f"Transition steps: {transition_steps}")
 curriculum_lr_lambda = create_curriculum_lr_lambda(transition_steps)
+plot_lr_schedule(transition_steps, curriculum_lr_lambda)
 
 
 # Customize the trainer to use our curriculum learning lambda for the lr scheduler
