@@ -1,9 +1,12 @@
 import os
 
+import torch
 import trl
-from datasets import load_dataset, concatenate_datasets
+from curriculum_utils import calculate_curriculum_steps, create_curriculum_lr_lambda
+from datasets import concatenate_datasets, load_dataset
 from digit_recognition_reward_fns import answer_reward_func, format_reward_func
 from prepare_inputs import tokenize_and_inject_images
+from torch.optim.lr_scheduler import LambdaLR
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
@@ -39,7 +42,7 @@ print(
 gradient_checkpointing = True
 
 model_config = ModelConfig(
-    model_name_or_path="Qwen/Qwen2-VL-7B-Instruct",
+    model_name_or_path="Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="bfloat16",
     use_peft=False,
     attn_implementation="flash_attention_2",
@@ -61,10 +64,8 @@ else:
     raise ValueError("Invalid gradient checkpointing value")
 
 
-
-
 processor = AutoProcessor.from_pretrained(
-    "Qwen/Qwen2-VL-7B-Instruct",
+    "Qwen/Qwen2-VL-2B-Instruct",
     padding_side="left",
 )
 
@@ -82,11 +83,10 @@ training_args = GRPOConfig(
     save_total_limit=50,
     num_train_epochs=1,
     # represents the number of generations per device
-    per_device_train_batch_size=9,
+    per_device_train_batch_size=10,
     # number of generations total - should be per_device_train_batch_size * num_gpus
-    num_generations=27,
+    num_generations=40,
     gradient_accumulation_steps=4,
-    # Turning this on...
     gradient_checkpointing=gradient_checkpointing,
     bf16=True,
     # GRPO specific parameters
@@ -105,7 +105,31 @@ training_args = GRPOConfig(
     log_completions=True,
 )
 
-trainer = QwenGRPOTrainer(
+# Setup curriculum learning
+dataset_sizes = [len(digits_1_train), len(digits_2_train), len(digits_3_train)]
+num_gpus = torch.cuda.device_count()
+transition_steps = calculate_curriculum_steps(
+    dataset_sizes,
+    training_args.per_device_train_batch_size,
+    training_args.gradient_accumulation_steps,
+    num_gpus,
+)
+curriculum_lr_lambda = create_curriculum_lr_lambda(transition_steps)
+
+
+# Customize the trainer to use our curriculum learning lambda for the lr scheduler
+class LRLambdaQwenGRPOTrainer(QwenGRPOTrainer):
+    def __init__(self, *args, lr_lambda=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lr_lambda = lr_lambda
+
+    def create_scheduler(self, num_training_steps, optimizer=None):
+        optimizer = self.optimizer if optimizer is None else optimizer
+        self.lr_scheduler = LambdaLR(optimizer, self.lr_lambda)
+        return self.lr_scheduler
+
+
+trainer = LRLambdaQwenGRPOTrainer(
     model=model,
     processing_class=processor,
     reward_funcs=[
@@ -116,8 +140,10 @@ trainer = QwenGRPOTrainer(
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    # Don't shuffle the dataset so we train on the curriculm in order.
-    shuffle_dataset=False, 
+    # Don't shuffle the dataset so we train on the curriculm in order - 1 digit, then 2 digits, then 3 digits.
+    shuffle_dataset=False,
+    # use our curriculum learning lambda for the lr scheduler
+    lr_lambda=curriculum_lr_lambda,
 )
 
 trainer.train()

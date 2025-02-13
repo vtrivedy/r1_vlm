@@ -49,6 +49,9 @@ CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gp
 # 7b zero2 offload
 CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only_zero2_offload.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
 
+# 2b high completion run all gpu
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
+
 ```
 
 ## Results
