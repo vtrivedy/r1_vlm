@@ -56,8 +56,8 @@ training_args = GRPOConfig(
     num_train_epochs=1,
     # represents the number of generations per device
     per_device_train_batch_size=8,
-    # number of generations total
-    num_generations=8,
+    # number of generations total - should be per_device_train_batch_size * num_gpus
+    num_generations=24,
     gradient_accumulation_steps=4,
     # Turning this on...
     gradient_checkpointing=True,
@@ -99,8 +99,8 @@ trainer.train()
 # [] -
 
 # GOALS:
-# [In progress] - Branch off of TRL main (again) with the new version of their trainer. Get 2B training off of it on digits on a single GPU.
-# [TODO] - Get 2B training off of it on digits on multiple GPUs - either zero2 or zero3.
+# [DONE] - Branch off of TRL main (again) with the new version of their trainer. Get 2B training off of it on digits on a single GPU.
+# [DONE] - Get 2B training off of it on digits on multiple GPUs - zero2.
 # [TODO] - Get 7B model training on digits task - maybe zero3 if necessary? Prove we can solve it to prove the code works.
 # [TODO] - Get VLLM working. It should make the generation step a whole lot faster and thus training faster.
 # [TODO] - Try the decoding task again.
