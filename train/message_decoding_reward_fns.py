@@ -26,7 +26,7 @@ def print_reward(
     print(f"\nExecuting {function_name}")
     print("=" * 100)
 
-    for idx, (prompt, completion_conv, gt, reward) in enumerate(
+    for idx, (prompt, completion, gt, reward) in enumerate(
         zip(prompts, completions, target, rewards)
     ):
         # Clean up image padding tokens
@@ -36,7 +36,7 @@ def print_reward(
         print(f"Function name: {function_name}")
         print(f"Sample {idx + 1}:")
         print(f"Prompt:\n{prompt_cleaned}")
-        print(f"Completion:\n{completion_conv[0]['content']}")
+        print(f"Completion:\n{completion}")
         print(f"Target: {gt}")
         print(f"Reward: {reward}")
 
@@ -49,6 +49,30 @@ def print_reward(
                 print(f"Can't find {field} in reward_function_kwargs")
 
         print("-" * 100)
+
+
+def extract_completion_texts(completions):
+    """
+    Extracts cleaned completion text as strings from model conversation outputs.
+    Removes bootstrap prompt and keeps only content starting at the first <think> tag.
+
+    Args:
+        completions (list): List of completion conversation objects
+
+    Returns:
+        list[str]: List of cleaned completion texts
+    """
+    completion_texts = []
+    for completion_conv in completions:
+        try:
+            completion = completion_conv[0]["content"]
+            # remove anything before the first <think> tag (bootstrap prompt)
+            completion = re.search(r".*?(<think>[\s\S]*)", completion).group(1)
+            completion_texts.append(completion)
+        except Exception as e:
+            print(f"Error processing completion: {e}")
+            completion_texts.append("")
+    return completion_texts
 
 
 def format_reward_func(completions, **kwargs):
@@ -67,11 +91,10 @@ def format_reward_func(completions, **kwargs):
 
     target = kwargs["decoded_message"]
 
-    for completion_conv, gt in zip(completions, target):
-        try:
-            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion_conv[0]["content"]
+    completion_texts = extract_completion_texts(completions)
 
+    for completion, gt in zip(completion_texts, target):
+        try:
             # Check if the format is correct
             regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
@@ -89,84 +112,9 @@ def format_reward_func(completions, **kwargs):
     if PRINT_RESULTS:
         print_reward(
             function_name="format_reward_func",
-            prompts=kwargs["prompts"],
-            completions=completions,
+            prompts=kwargs["prompts_text"],
+            completions=completion_texts,
             target=target,
-            rewards=rewards,
-            additional_fields=["coded_message", "decoded_message", "mapping"],
-            reward_function_kwargs=kwargs,
-        )
-
-    return rewards
-
-
-def levenshtein_distance(s1: str, s2: str) -> int:
-    """
-    Returns the edit distance between two strings.
-    """
-    if not isinstance(s1, str) or not isinstance(s2, str):
-        raise ValueError("Input must be strings")
-
-    if s1 == s2:
-        return 0
-    len1, len2 = len(s1), len(s2)
-    if len1 == 0:
-        return len2
-    if len2 == 0:
-        return len1
-    dp = list(range(len2 + 1))
-    for i in range(1, len1 + 1):
-        prev = dp[0]
-        dp[0] = i
-        for j in range(1, len2 + 1):
-            temp = dp[j]
-            if s1[i - 1] == s2[j - 1]:
-                dp[j] = prev
-            else:
-                dp[j] = 1 + min(dp[j], dp[j - 1], prev)
-            prev = temp
-    return dp[len2]
-
-
-def soft_edit_distance_reward(completions, **kwargs):
-    PRINT_RESULTS = True
-
-    rewards = []
-    targets = kwargs["decoded_message"]
-
-    for completion_conv, target in zip(completions, targets):
-        try:
-            # Extract answer: requires the predicted decoded message is within <answer>...</answer>
-            completion = "<think>" + completion_conv[0]["content"]
-            match = re.search(r"<answer>(.*?)<\/answer>", completion)
-
-            if match is None:
-                rewards.append(0.0)
-                continue
-            predicted = match.group(1).strip()
-
-            # the maximum possible edit distance is the length of the longer string
-            max_len = max(len(target), len(predicted))
-
-            if max_len == 0:
-                raise ValueError(
-                    "Max length is 0. Soemthing is not right because the target is always non-empty"
-                )
-            else:
-                distance = levenshtein_distance(predicted, target)
-                reward = 1.0 - (distance / max_len)
-                reward = max(0.0, min(1.0, reward))
-                rewards.append(reward)
-        except Exception as e:
-            print(f"Error in soft_edit_distance_reward: {e}")
-            rewards.append(0.0)
-
-    if PRINT_RESULTS:
-        print_reward(
-            function_name="soft_edit_distance_reward",
-            prompts=kwargs["prompts"],
-            completions=completions,
-            target=targets,
             rewards=rewards,
             additional_fields=["coded_message", "decoded_message", "mapping"],
             reward_function_kwargs=kwargs,
@@ -184,10 +132,11 @@ def answer_reward_func(completions, **kwargs):
     rewards = []
     targets = kwargs["decoded_message"]
 
-    for completion_conv, target in zip(completions, targets):
+    completion_texts = extract_completion_texts(completions)
+
+    for completion, target in zip(completion_texts, targets):
         try:
             # Extract answer: requires the predicted decoded message is within <answer>...</answer>
-            completion = "<think>" + completion_conv[0]["content"]
             match = re.search(r"<answer>(.*?)<\/answer>", completion)
 
             if match is None:
@@ -208,8 +157,8 @@ def answer_reward_func(completions, **kwargs):
     if PRINT_RESULTS:
         print_reward(
             function_name="answer_reward_func",
-            prompts=kwargs["prompts"],
-            completions=completions,
+            prompts=kwargs["prompts_text"],
+            completions=completion_texts,
             target=targets,
             rewards=rewards,
             additional_fields=["coded_message", "decoded_message", "mapping"],
