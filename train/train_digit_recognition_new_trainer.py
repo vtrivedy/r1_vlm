@@ -1,3 +1,5 @@
+import os
+
 import torch
 import trl
 from curriculum_utils import (
@@ -7,13 +9,14 @@ from curriculum_utils import (
 )
 from datasets import concatenate_datasets, load_dataset
 from digit_recognition_reward_fns import answer_reward_func, format_reward_func
-from peft import LoraConfig
 from prepare_inputs import tokenize_and_inject_images
 from torch.optim.lr_scheduler import LambdaLR
-from torch.utils.data import SequentialSampler
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
-from trl.trainer import QwenGRPOTrainer
+from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
+
+os.environ["WANDB_ENTITY"] = "groundlightai"
+os.environ["WANDB_PROJECT"] = "digit-recognition-new-trainer"
 
 print(trl.__file__)
 
@@ -40,30 +43,30 @@ print(
     f"There are {len(train_dataset)} training examples and {len(eval_dataset)} eval examples."
 )
 
-# load the model
+# Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.
+gradient_checkpointing = False
+
 model_config = ModelConfig(
     model_name_or_path="Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="bfloat16",
-    use_peft=True,
+    use_peft=False,
+    #    attn_implementation="flash_attention_2",
 )
 
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     pretrained_model_name_or_path=model_config.model_name_or_path,
     torch_dtype=model_config.torch_dtype,
-    # has to be set to false for gradient checkpointing to work
-    use_cache=False,
     # faster generation, R1-V suggestion
-    attn_implementation="flash_attention_2",
+    #    attn_implementation=model_config.attn_implementation,
 )
 
-peft_config = LoraConfig(
-    lora_alpha=16,
-    lora_dropout=0.05,
-    r=8,
-    bias="none",
-    target_modules=["q_proj", "v_proj"],
-    task_type="CAUSAL_LM",
-)
+# use cache if not gradient checkpointing
+if gradient_checkpointing:
+    model.config.use_cache = False
+elif not gradient_checkpointing:
+    model.config.use_cache = True
+else:
+    raise ValueError("Invalid gradient checkpointing value")
 
 pixels = 224 * 224
 processor = AutoProcessor.from_pretrained(
@@ -73,10 +76,13 @@ processor = AutoProcessor.from_pretrained(
     max_pixels=pixels,
 )
 
-# Hyperparameters
+
 training_args = GRPOConfig(
+    model_init_kwargs=model_config,
     output_dir="vlm-r1-digit-recognition",
     learning_rate=1e-6,
+    # reduce beta2 as our number of steps is small
+    adam_beta2=0.98,
     lr_scheduler_type="cosine",
     warmup_steps=0,
     logging_steps=1,
@@ -84,21 +90,27 @@ training_args = GRPOConfig(
     # ckpts are 51 gb each!!
     save_total_limit=50,
     num_train_epochs=1,
-    # I've heard I shouldn't increase this due to a bug.
-    per_device_train_batch_size=1,
+    # represents the number of generations per device
+    per_device_train_batch_size=10,
+    # number of generations total - should be per_device_train_batch_size * num_gpus
+    num_generations=40,
     gradient_accumulation_steps=4,
-    gradient_checkpointing=False,
+    gradient_checkpointing=gradient_checkpointing,
     bf16=True,
     # GRPO specific parameters
-    # TOOD: Make sure these are right
     max_prompt_length=1024,
     max_completion_length=512,  # max length of the generated output for our solution
-    num_generations=8,
     beta=0.001,
     use_vllm=False,
     report_to="wandb",
     # R1-V suggestion
     temperature=1.0,
+    # sync the reference model every so often
+    sync_ref_model=True,
+    # how often to merge the reference model with the train model, default is 64
+    ref_model_sync_steps=64,
+    eval_strategy="no",
+    log_completions=True,
 )
 
 # Setup curriculum learning
@@ -106,24 +118,20 @@ dataset_sizes = [len(digits_1_train), len(digits_2_train), len(digits_3_train)]
 num_gpus = torch.cuda.device_count()
 transition_steps = calculate_curriculum_steps(
     dataset_sizes,
-    training_args.per_device_train_batch_size,
+    1,  # the per device batch size - manually setting this here because the value in args is not what it seems
     training_args.gradient_accumulation_steps,
-    num_gpus,
+    1,  # the number of GPUs isn't relevant here (I think??) because of the change to generation setup.
 )
+print(f"Transition steps: {transition_steps}")
 curriculum_lr_lambda = create_curriculum_lr_lambda(transition_steps)
-
-# Visualize the schedule
 plot_lr_schedule(transition_steps, curriculum_lr_lambda)
 
 
-# turn off shuffling so the model sees the data in increasing difficulty order
-class NoShuffleQwenGRPOTrainer(QwenGRPOTrainer):
+# Customize the trainer to use our curriculum learning lambda for the lr scheduler
+class LRLambdaQwenGRPOTrainer(QwenGRPOTrainer):
     def __init__(self, *args, lr_lambda=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.lr_lambda = lr_lambda
-
-    def _get_train_sampler(self):
-        return SequentialSampler(self.train_dataset)
 
     def create_scheduler(self, num_training_steps, optimizer=None):
         optimizer = self.optimizer if optimizer is None else optimizer
@@ -131,20 +139,35 @@ class NoShuffleQwenGRPOTrainer(QwenGRPOTrainer):
         return self.lr_scheduler
 
 
-trainer = NoShuffleQwenGRPOTrainer(
+trainer = LRLambdaQwenGRPOTrainer(
     model=model,
+    processing_class=processor,
     reward_funcs=[
         format_reward_func,
         answer_reward_func,
     ],
-    processing_class=processor,
-    args=training_args,
     tokenize_and_inject_images=tokenize_and_inject_images,
+    args=training_args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    # Don't shuffle the dataset so we train on the curriculm in order - 1 digit, then 2 digits, then 3 digits.
+    shuffle_dataset=False,
     # use our curriculum learning lambda for the lr scheduler
     lr_lambda=curriculum_lr_lambda,
-    #    peft_config=peft_config,
 )
 
 trainer.train()
+# TODOS:
+# [x] - the section per_device_train/eval_batch_size * num processes can be divided by the number of generations seems a bit worrying. It might limit num_generations to 4?
+# [x] - inject images into the input at the top of _prepare_inputs
+# [] - add logging metrics suggested by tyler
+# [] -
+
+# GOALS:
+# [DONE] - Branch off of TRL main (again) with the new version of their trainer. Get 2B training off of it on digits on a single GPU.
+# [DONE] - Get 2B training off of it on digits on multiple GPUs - zero2.
+# [DONE] - Get 7B model training on digits task - maybe zero3 if necessary? Prove we can solve it to prove the code works. I can do it on zero2 offload optimizer and params.
+# [TODO] - Get VLLM working. It should make the generation step a whole lot faster and thus training faster.
+# [TODO] - Try the decoding task again.
+
+# NOTES:

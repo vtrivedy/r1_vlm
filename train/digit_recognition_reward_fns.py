@@ -25,7 +25,7 @@ def print_reward(*,
     print(f"\nExecuting {function_name}")
     print("=" * 100)
 
-    for idx, (prompt, completion_conv, gt, reward) in enumerate(
+    for idx, (prompt, completion, gt, reward) in enumerate(
         zip(prompts, completions, target, rewards)
     ):
         # Clean up image padding tokens
@@ -35,7 +35,7 @@ def print_reward(*,
         print(f"Function name: {function_name}")
         print(f"Sample {idx + 1}:")
         print(f"Prompt:\n{prompt_cleaned}")
-        print(f"Completion:\n{completion_conv[0]['content']}")
+        print(f"Completion:\n{completion}")
         print(f"Target: {gt}")
         print(f"Reward: {reward}")
 
@@ -49,7 +49,28 @@ def print_reward(*,
 
         print("-" * 100)
 
-
+def extract_completion_texts(completions):
+    """
+    Extracts cleaned completion text as strings from model conversation outputs. 
+    Removes bootstrap prompt and keeps only content starting at the first <think> tag.
+    
+    Args:
+        completions (list): List of completion conversation objects
+        
+    Returns:
+        list[str]: List of cleaned completion texts
+    """
+    completion_texts = []
+    for completion_conv in completions:
+        try:
+            completion = completion_conv[0]["content"]
+            # remove anything before the first <think> tag (bootstrap prompt)
+            completion = re.search(r".*?(<think>[\s\S]*)", completion).group(1)
+            completion_texts.append(completion)
+        except Exception as e:
+            print(f"Error processing completion: {e}")
+            completion_texts.append("")
+    return completion_texts
 
 
 
@@ -67,14 +88,12 @@ def format_reward_func(completions, **kwargs):
     PRINT_RESULTS = False
 
     rewards = []
-    
     target = kwargs["label"] if kwargs['task'] == 'recognition' else kwargs['total']
 
-    for completion_conv, gt in zip(completions, target):
-        try:
-            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion_conv[0]["content"]
+    completion_texts = extract_completion_texts(completions)
 
+    for completion, gt in zip(completion_texts, target):
+        try:
             # Check if the format is correct
             regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
@@ -88,13 +107,12 @@ def format_reward_func(completions, **kwargs):
         except Exception as e:
             print(f"Error in format_reward_func: {e}")
             rewards.append(0.0)
-    
 
     if PRINT_RESULTS:
         print_reward(
             function_name="format_reward_func",
-            prompts=kwargs["prompts"],
-            completions=completions,
+            prompts=kwargs["prompts_text"],
+            completions=completion_texts,
             target=target,
             rewards=rewards,
             additional_fields=["task", 'label', 'total'],
@@ -120,45 +138,42 @@ def answer_reward_func(completions, **kwargs):
     
     task = tasks[0]
 
+    completion_texts = extract_completion_texts(completions)
+
     if task == "recognition":
-        rewards = _recognition_answer_reward_func(completions, **kwargs)
+        rewards = _recognition_answer_reward_func(completions=completions, completion_texts=completion_texts, **kwargs)
     elif task == "addition":
-        # TODO: implement this
-        rewards = _addition_answer_reward_func(completions, **kwargs)
+        rewards = _addition_answer_reward_func(completions=completions, completion_texts=completion_texts, **kwargs)
     else:
         raise ValueError(f"Invalid task: {task}")
     
     if PRINT_RESULTS:
         print_reward(
             function_name="answer_reward_func",
-            prompts=kwargs["prompts"],
-            completions=completions,
+            prompts=kwargs["prompts_text"],
+            completions=completion_texts,
             target=kwargs["label"] if task == "recognition" else kwargs["total"],
             rewards=rewards,
             additional_fields=["task", 'label', 'total'],
             reward_function_kwargs=kwargs,
         )
-
+    
     return rewards
 
-def _recognition_answer_reward_func(completion, **kwargs):
+def _recognition_answer_reward_func(completions, completion_texts, **kwargs):
     """
     Evaluates if the answer is exactly correct for the recognition task
     """
     
     rewards = []
-    
     # in this case the target is the list of a list of digits
     target = kwargs['label']
     
-    for completion_conv, gt in zip(completion, target):
+    for completion, gt in zip(completion_texts, target):
         if type(gt) != list:
             raise ValueError(f"Target is not a list: {gt}! This is unexpected.")
-        
         try:
-            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion_conv[0]["content"]
-            
+            # extract the answer
             match = re.search(r"<answer>(.*?)<\/answer>", completion)
             
             if match is None:
@@ -192,24 +207,21 @@ def _recognition_answer_reward_func(completion, **kwargs):
     
     return rewards
 
-def _addition_answer_reward_func(completion, **kwargs):
+def _addition_answer_reward_func(completions, completion_texts, **kwargs):
     """
     Evaluates if the answer is exactly correct for the addition task
     """
     
     rewards = []
-    
+
     # in this case the target is the sum of the digits
     target = kwargs['total']
-    for completion_conv, gt in zip(completion, target):
+    for completion, gt in zip(completion_texts, target):
         if type(gt) != int:
             raise ValueError(f"Target is not an int: {gt}! This is unexpected.")
         
         try:
-            # add synthetic <think> as its already part of the prompt and prefilled for the assistant to more easily match the regex
-            completion = "<think>" + completion_conv[0]["content"]
-
-            # Check if the format is correct
+            # extract the answer
             match = re.search(r"<answer>(.*?)<\/answer>", completion)
 
             if match is None:
@@ -218,7 +230,7 @@ def _addition_answer_reward_func(completion, **kwargs):
 
             answer = match.group(1).strip()
             
-            # Define a regex pattern that only allows numbers and whitespace
+            # regex pattern that only allows numbers and whitespace
             allowed_pattern = r"^[\d\s]+$"
             
             if not re.match(allowed_pattern, answer):
