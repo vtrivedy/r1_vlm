@@ -9,6 +9,8 @@ from tqdm import tqdm
 # setting a seed for reproducibility
 random.seed(42)
 
+# creates a dataset mapping scrambled words to their unscrambled form. Includes decoder as an image.
+
 
 def generate_mapping():
     """
@@ -86,11 +88,6 @@ def generate_decoder_image(
     draw.text((bottom_x, bottom_y), bottom_text, fill=text_color, font=font)
 
     return image
-
-
-# creates a dataset mapping scrambled words to their unscrambled form. Includes decoder as an image.
-
-words_dataset = load_dataset("sunildkumar/popular_english_words", split="train")
 
 
 def create_sample(example):
