@@ -44,20 +44,20 @@ print(
 )
 
 # Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.
-gradient_checkpointing = True
+gradient_checkpointing = False
 
 model_config = ModelConfig(
     model_name_or_path="Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="bfloat16",
     use_peft=False,
-    attn_implementation="flash_attention_2",
+    #    attn_implementation="flash_attention_2",
 )
 
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     pretrained_model_name_or_path=model_config.model_name_or_path,
     torch_dtype=model_config.torch_dtype,
     # faster generation, R1-V suggestion
-    attn_implementation=model_config.attn_implementation,
+    #    attn_implementation=model_config.attn_implementation,
 )
 
 # use cache if not gradient checkpointing
@@ -68,15 +68,18 @@ elif not gradient_checkpointing:
 else:
     raise ValueError("Invalid gradient checkpointing value")
 
-
+pixels = 224 * 224
 processor = AutoProcessor.from_pretrained(
     "Qwen/Qwen2-VL-2B-Instruct",
     padding_side="left",
+    min_pixels=pixels,
+    max_pixels=pixels,
 )
+
 
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
-    output_dir="vlm-r1-digit-recognition-new-trainer",
+    output_dir="vlm-r1-digit-recognition",
     learning_rate=1e-6,
     # reduce beta2 as our number of steps is small
     adam_beta2=0.98,
