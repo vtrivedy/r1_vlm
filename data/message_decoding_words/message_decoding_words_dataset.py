@@ -128,9 +128,12 @@ def create_dataset():
     for i, example in tqdm(enumerate(words_dataset), total=len(words_dataset)):
         image, decoded_word, coded_word, decoder_mapping = create_sample(example)
 
-        fpath = str(image_dir / f"{i}.png")
+        # Store only the relative path starting from 'images/'
+        fpath = f"images/{i}.png"
 
-        image.save(fpath)
+        # Use full path for saving the image
+        full_path = image_dir / f"{i}.png"
+        image.save(full_path)
 
         data["coded_message"].append(coded_word)
         data["decoded_message"].append(decoded_word)
