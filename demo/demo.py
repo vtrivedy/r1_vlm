@@ -12,6 +12,9 @@ from transformers import (
 )
 from trl import ModelConfig
 
+# run with:
+# CUDA_VISIBLE_DEVICES=0 uv run gradio demo/demo.py
+
 
 def get_eval_dataset():
     full_dataset = load_dataset("sunildkumar/message-decoding-words")["train"]
@@ -26,7 +29,7 @@ def get_eval_dataset():
 
 def load_model_and_tokenizer():
     model_config = ModelConfig(
-        model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-340",
+        model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-460",
         torch_dtype="bfloat16",
         use_peft=False,
     )
@@ -48,9 +51,11 @@ def load_model_and_tokenizer():
     return model, processor
 
 
-# Load resources once at startup
-eval_dataset = get_eval_dataset()
-model, processor = load_model_and_tokenizer()
+# Move resource loading inside a function
+def load_resources():
+    global eval_dataset, model, processor
+    eval_dataset = get_eval_dataset()
+    model, processor = load_model_and_tokenizer()
 
 
 def show_random_example():
@@ -144,10 +149,10 @@ def validate_and_submit(word):
 
     word = word.lower()
 
-    # Replace input with submitted word and show run button
+    # Replace input with submitted word and disable submit button
     return (
         gr.update(value=word, interactive=False, label="Submitted Word"),
-        gr.update(visible=False),  # Hide the submit button
+        gr.update(interactive=False),  # Disable submit button instead of hiding
         gr.update(visible=True),  # Show the run button
     )
 
@@ -206,7 +211,10 @@ def run_inference(word, image, mapping):
 
 # Create the Gradio interface
 with gr.Blocks() as demo:
-    gr.Markdown("# Vision Language Model Demo")
+    # Load resources when the app starts
+    load_resources()
+
+    gr.Markdown("# Message Decoding Demo")
     current_mapping = gr.State()
     current_image = gr.State()
 
@@ -215,7 +223,7 @@ with gr.Blocks() as demo:
         image_output = gr.Image(label="Decoder")
 
     # Button to load new random example
-    next_button = gr.Button("Show Random Example")
+    next_button = gr.Button("Generate Random Decoder")
     next_button.click(
         fn=show_random_example, outputs=[image_output, current_mapping, current_image]
     )
@@ -227,20 +235,21 @@ with gr.Blocks() as demo:
         max_lines=1,
         show_copy_button=False,
     )
-    submit_button = gr.Button("Submit Word")
+
+    # Group submit and run buttons vertically
+    with gr.Column():  # Use Column instead of Row for vertical layout
+        submit_button = gr.Button("Submit Word")
+        run_button = gr.Button("Run Model", visible=False)
 
     # Output area for model response
     model_output = gr.Textbox(
         label="Model Output",
         interactive=False,
         visible=False,
-        max_lines=10,  # Set maximum visible lines
-        container=True,  # Enable scrolling container
-        show_copy_button=True,  # Useful for long outputs
+        max_lines=10,
+        container=True,
+        show_copy_button=True,
     )
-
-    # Run model button (hidden initially)
-    run_button = gr.Button("Run Model", visible=False)
 
     # Add loading indicator
     with gr.Row():
@@ -274,4 +283,4 @@ with gr.Blocks() as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
