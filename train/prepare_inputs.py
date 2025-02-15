@@ -13,7 +13,6 @@ def tokenize_and_inject_images(*, inputs, processing_class):
         - texts: The full prompts (in text) that were used to generate the batch
         - conversations: The conversations in conversation format
     """
-
     conversations = [ex["messages"] for ex in inputs]
 
     # Clean up None values from the messages
