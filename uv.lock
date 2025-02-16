@@ -642,6 +642,18 @@ wheels = [
 ]
 
 [[package]]
+name = "flash-attn"
+version = "2.5.1.post1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+    { name = "ninja" },
+    { name = "packaging" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/aa/08/307abdfc467390f61c2dd478ad5eaf377b6bc04ab44a17744b4c56207c88/flash_attn-2.5.1.post1.tar.gz", hash = "sha256:d1dbf436be042edf3a3fd5fb45dc38546db16016907f356faaa449755051765b", size = 2472171 }
+
+[[package]]
 name = "fonttools"
 version = "4.55.8"
 source = { registry = "https://pypi.org/simple" }
@@ -2389,6 +2401,7 @@ dependencies = [
     { name = "accelerate" },
     { name = "datasets" },
     { name = "deepspeed" },
+    { name = "flash-attn" },
     { name = "gradio" },
     { name = "imgcat" },
     { name = "ipdb" },
@@ -2410,6 +2423,7 @@ requires-dist = [
     { name = "accelerate", specifier = ">=1.3.0" },
     { name = "datasets", specifier = ">=3.2.0" },
     { name = "deepspeed", specifier = ">=0.16.3" },
+    { name = "flash-attn", specifier = "==2.5.1.post1" },
     { name = "gradio", specifier = ">=5.16.0" },
     { name = "imgcat", specifier = ">=0.6.0" },
     { name = "ipdb", specifier = ">=0.13.13" },
