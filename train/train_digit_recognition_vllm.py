@@ -115,7 +115,6 @@ transition_steps = calculate_curriculum_steps(
     training_args.gradient_accumulation_steps,
     1,  # the number of GPUs isn't relevant here (I think??) because of the change to generation setup.
 )
-print(f"Transition steps: {transition_steps}")
 curriculum_lr_lambda = create_curriculum_lr_lambda(transition_steps)
 plot_lr_schedule(transition_steps, curriculum_lr_lambda)
 
