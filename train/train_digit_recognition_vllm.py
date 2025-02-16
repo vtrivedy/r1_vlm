@@ -93,7 +93,7 @@ training_args = GRPOConfig(
     gradient_checkpointing=gradient_checkpointing,
     bf16=True,
     # GRPO specific parameters
-    max_prompt_length=1024,
+    max_prompt_length=None,  # must be None for vllm
     max_completion_length=512,
     beta=0.001,
     temperature=1.0,
@@ -149,3 +149,15 @@ trainer = LRLambdaQwenGRPOTrainer(
 )
 
 trainer.train()
+
+
+# TODOs:
+# [] - Is training_args.vllm_dtype appropriate? Defaults to `auto`
+# [] - Is training_args.vllm_max_model_len appropriate? Defaults to None
+# [] - Verify all self.llm are changed to self.vlm
+
+# NOTES:
+# self._last_loaded_step is keeps track of the last global training step where weights were sent to vllm
+# We only need to update the weights on vllm after a change to the training model, which doesn't happen every step IF you're using gradient accumulation
+
+# changed self.llm -> self.vlm to make it obvious that we are using a vlm not llm
