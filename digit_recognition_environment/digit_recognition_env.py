@@ -32,14 +32,11 @@ class DigitRecognitionEnv(SimpleVisionEnv):
         # concatenate the three splits
         dataset = concatenate_datasets([digits_1, digits_2, digits_3])
 
-        # Filter for recognition task only
-        dataset = dataset.filter(lambda x: x["task"] == "recognition")
-
         return dataset
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
-        def correctness_reward_func(completions, **kwargs) -> List[float]:
-            """Reward function that checks if the predicted digits match the true labels"""
+        def _recognition_correctness_reward_func(completions, **kwargs) -> List[float]:
+            """Reward function for recognition task"""
 
             # verify that the task is recognition for all instances. If it isn't assumptions downstream fail
             tasks = kwargs["task"]
@@ -66,6 +63,49 @@ class DigitRecognitionEnv(SimpleVisionEnv):
                 1.0 if r == sorted(a) else 0.0
                 for r, a in zip(parsed_responses, answers)
             ]
+
+        def _addition_correctness_reward_func(completions, **kwargs) -> List[float]:
+            """
+            Reward function for addition task
+            """
+
+            answers = kwargs["total"]
+            responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
+
+            def check_answer(response, answer):
+                try:
+                    response = int(response)
+                    answer = int(answer)
+
+                    if response == answer:
+                        return 1.0
+                    else:
+                        return 0.0
+
+                except Exception as e:
+                    print(f"Error in _addition_correctness_reward_func: {e}")
+                    return 0.0
+
+            rewards = [check_answer(r, a) for r, a in zip(responses, answers)]
+            return rewards
+
+        def correctness_reward_func(completions, **kwargs) -> List[float]:
+            """Reward function that checks if the predicted digits match the true labels"""
+
+            tasks = kwargs["task"]
+            if not (task == tasks[0] for task in tasks):
+                raise ValueError(
+                    "All tasks must be same type, invalidates an assumption of the code"
+                )
+
+            task = tasks[0]
+
+            if task == "recognition":
+                return _recognition_correctness_reward_func(completions, **kwargs)
+            elif task == "addition":
+                return _addition_correctness_reward_func(completions, **kwargs)
+            else:
+                raise ValueError(f"Invalid task: {task}")
 
         def format_reward_func(completions, **kwargs) -> List[float]:
             """
