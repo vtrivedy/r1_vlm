@@ -1,3 +1,4 @@
+import re
 from typing import Any, List
 
 from datasets import Dataset, concatenate_datasets, load_dataset
@@ -74,16 +75,24 @@ class DigitRecognitionEnv(SimpleVisionEnv):
             """
 
             def check_format(text: str) -> float:
+                # remove the bootstrap prompt from the text if it appears at the start
+                text = text.removeprefix("Let me solve this step by step.\n")
+
                 try:
-                    parsed = self.parser.parse(text)
-                    return (
-                        1.0
-                        if hasattr(parsed, "think") and hasattr(parsed, "answer")
-                        else 0.0
-                    )
-                except:
+                    # Check if the format is correct
+                    regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
+
+                    match = re.search(regex, text, re.DOTALL)
+
+                    if match is None or len(match.groups()) != 2:
+                        return 0.0
+                    else:
+                        return 1.0
+                except Exception as e:
+                    print(f"Error in format_reward_func: {e}")
                     return 0.0
 
-            return [check_format(c[0]["content"]) for c in completions]
+            rewards = [check_format(c[0]["content"]) for c in completions]
+            return rewards
 
         return [correctness_reward_func, format_reward_func]

@@ -34,11 +34,6 @@ class SimpleVisionEnv(SimpleEnv):
             vlm_inputs, sampling_params=custom_sp, use_tqdm=False
         )  # type: ignore
 
-        print(f"Number of states: {len(states)}")
-        print(f"Number of completions: {len(completions)}")
-        print(f"Number of VLM inputs: {len(vlm_inputs)}")
-        print()
-
         for i, completion in enumerate(completions):
             states[i]["messages"].append(
                 {"role": "assistant", "content": completion.outputs[0].text}
