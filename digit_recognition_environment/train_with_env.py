@@ -59,8 +59,8 @@ training_args = GRPOConfig(
     save_total_limit=50,
     num_train_epochs=1,
     # starting with 1 gpu and small number of completions
-    per_device_train_batch_size=2,
-    num_generations=2,
+    per_device_train_batch_size=5,
+    num_generations=15,
     gradient_accumulation_steps=4,
     gradient_checkpointing=gradient_checkpointing,
     bf16=True,
@@ -74,7 +74,7 @@ training_args = GRPOConfig(
     eval_strategy="no",
     log_completions=True,
     use_vllm=True,
-    vllm_gpu_memory_utilization=0.5,
+    vllm_gpu_memory_utilization=0.2,
     report_to="wandb",
     vllm_device="cuda:1",
 )
@@ -90,4 +90,4 @@ trainer = QwenGRPOTrainer(
     env=vf_env,
 )
 
-# trainer.train()
+trainer.train()

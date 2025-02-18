@@ -75,8 +75,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_
 
 
 # 3b digit recognition verifiers integration 1 gpu for training, 1 for vllm
-CUDA_VISIBLE_DEVICES=0,1 uv run train/train_digit_recognition_verifiers_integration.py
+CUDA_VISIBLE_DEVICES=0,1 uv run digit_recognition_environment/train_with_env.py
 
+# 3b digit recognition verifiers integration 3 gpu for training, 1 for vllm
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml digit_recognition_environment/train_with_env.py 
 ```
 
 ## Results

@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, concatenate_datasets, load_dataset
 from simple_vision_env import SimpleVisionEnv
 from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
@@ -22,13 +22,34 @@ class DigitRecognitionEnv(SimpleVisionEnv):
 
     def get_dataset(self, **kwargs: Any) -> Dataset:
         dataset = load_dataset(self.dataset_name)
+
+        # select all three splits
+        digits_1 = dataset["digits_1"]
+        digits_2 = dataset["digits_2"]
+        digits_3 = dataset["digits_3"]
+
+        # concatenate the three splits
+        dataset = concatenate_datasets([digits_1, digits_2, digits_3])
+
         # Filter for recognition task only
         dataset = dataset.filter(lambda x: x["task"] == "recognition")
+
         return dataset
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
-        def correctness_reward_func(completions, answer, **kwargs) -> List[float]:
+        def correctness_reward_func(completions, **kwargs) -> List[float]:
             """Reward function that checks if the predicted digits match the true labels"""
+
+            # verify that the task is recognition for all instances. If it isn't assumptions downstream fail
+            tasks = kwargs["task"]
+            if not all(t == "recognition" for t in tasks):
+                raise ValueError("All instances must be recognition tasks")
+
+            # the answer in this case is the label, which is a list of list of ints, e.g. [[0, 5], [0, 5], [2, 8], [2, 8]]
+            answers = kwargs["label"]
+
+            # parse the last message in each completion (completions are conversations) for data between <answer> and </answer> tags
+            # only selects the data between the first answer tags if there are multiple valid sets per completion.
             responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
 
             def parse_list(r: str) -> List[int]:
@@ -41,7 +62,8 @@ class DigitRecognitionEnv(SimpleVisionEnv):
 
             parsed_responses = [parse_list(r) for r in responses]
             return [
-                1.0 if r == sorted(a) else 0.0 for r, a in zip(parsed_responses, answer)
+                1.0 if r == sorted(a) else 0.0
+                for r, a in zip(parsed_responses, answers)
             ]
 
         def format_reward_func(completions, **kwargs) -> List[float]:
