@@ -2,7 +2,6 @@ import re
 from typing import Any, List
 
 from datasets import Dataset, concatenate_datasets, load_dataset
-from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -14,15 +13,13 @@ class DigitRecognitionEnv(SimpleVisionEnv):
         self,
         dataset: str = "sunildkumar/digit-recognition-r1",
         system_prompt: str = "",
-        processor_name: str = "Qwen/Qwen2.5-VL-3B-Instruct",
         **kwargs,  # passed to the superclass
     ):
         super().__init__(system_prompt=system_prompt, **kwargs)
         self.dataset_name = dataset
         self.parser = XMLParser(fields=["think", "answer"])
-        self.processor = AutoProcessor.from_pretrained(processor_name)
 
-    def get_dataset(self, **kwargs: Any) -> Dataset:
+    def get_dataset(self) -> Dataset:
         dataset = load_dataset(self.dataset_name)
 
         # select all three splits

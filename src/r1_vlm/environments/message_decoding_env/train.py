@@ -4,15 +4,14 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
 
-from r1_vlm.environments.digit_recognition_env.digit_recognition_env import (
-    DigitRecognitionEnv,
+from r1_vlm.environments.message_decoding_env.message_decoding_env import (
+    MessageDecodingEnv,
 )
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
-os.environ["WANDB_PROJECT"] = "digit-recognition-verifiers-integration"
+os.environ["WANDB_PROJECT"] = "message-decoding-verifiers-integration"
 
-
-vf_env = DigitRecognitionEnv()
+vf_env = MessageDecodingEnv()
 dataset = vf_env.get_dataset()
 rubric = vf_env.get_rubric()
 
@@ -20,12 +19,12 @@ rubric = vf_env.get_rubric()
 # Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.
 gradient_checkpointing = False
 
-
 model_config = ModelConfig(
     model_name_or_path="Qwen/Qwen2.5-VL-3B-Instruct",
     torch_dtype="bfloat16",
     use_peft=False,
 )
+
 
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     pretrained_model_name_or_path=model_config.model_name_or_path,
@@ -46,9 +45,10 @@ processor = AutoProcessor.from_pretrained(
     model_config.model_name_or_path, padding_side="left"
 )
 
+
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
-    output_dir="vlm-r1-digit-recognition-verifiers-integration",
+    output_dir="vlm-r1-message-decoding-verifiers-integration",
     learning_rate=1e-6,
     adam_beta2=0.98,
     lr_scheduler_type="cosine",
@@ -57,6 +57,7 @@ training_args = GRPOConfig(
     save_steps=20,
     save_total_limit=50,
     num_train_epochs=1,
+    # starting with 1 gpu and small number of completions
     per_device_train_batch_size=5,
     num_generations=15,
     gradient_accumulation_steps=4,
@@ -74,9 +75,8 @@ training_args = GRPOConfig(
     use_vllm=True,
     vllm_gpu_memory_utilization=0.2,
     report_to="wandb",
-    vllm_device="cuda:1",
+    vllm_device="cuda:3",
 )
-
 
 trainer = QwenGRPOTrainer(
     model=model,
