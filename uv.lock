@@ -643,15 +643,13 @@ wheels = [
 
 [[package]]
 name = "flash-attn"
-version = "2.5.1.post1"
+version = "2.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "einops" },
-    { name = "ninja" },
-    { name = "packaging" },
     { name = "torch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/08/307abdfc467390f61c2dd478ad5eaf377b6bc04ab44a17744b4c56207c88/flash_attn-2.5.1.post1.tar.gz", hash = "sha256:d1dbf436be042edf3a3fd5fb45dc38546db16016907f356faaa449755051765b", size = 2472171 }
+sdist = { url = "https://files.pythonhosted.org/packages/81/f5/59b0727da8c041c0e5eb9feba068e27c88b2cead0e03083c5c6d444d004b/flash_attn-2.7.3.tar.gz", hash = "sha256:9078cf92355c4e3f77f01626ece8c71aad26bdbfa827c2af8c6ac5632cc1cc58", size = 3223463 }
 
 [[package]]
 name = "fonttools"
@@ -1200,6 +1198,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/af/60/bc7622aefb2aee1c0b4ba23c1446d3e30225c8770b38d7aedbfb65ca9d5a/lark-1.2.2.tar.gz", hash = "sha256:ca807d0162cd16cef15a8feecb862d7319e7a09bdb13aef927968e45040fed80", size = 252132 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2d/00/d90b10b962b4277f5e64a78b6609968859ff86889f5b898c1a778c06ec00/lark-1.2.2-py3-none-any.whl", hash = "sha256:c2276486b02f0f1b90be155f2c8ba4a8e194d42775786db622faccd652d8e80c", size = 111036 },
+]
+
+[[package]]
+name = "liger-kernel"
+version = "0.5.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+    { name = "triton" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/4d/c33c72dd6147d3c3e53c41217480fae3b9e91d7d00906fa24c4b56225353/liger_kernel-0.5.3.tar.gz", hash = "sha256:65f97089da4d9383695fdead19ece482d98165aa309cc5349d6c26654663e301", size = 3464134 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4c/34/d18324fac47766a223f14ffd045a529988d94596ba1f9a88d8c3368cc095/liger_kernel-0.5.3-py3-none-any.whl", hash = "sha256:0a4770e5c2610e579fbad646422c1a5f71ef19e21ce4a21f6eeb2c65df1fd01b", size = 113615 },
 ]
 
 [[package]]
@@ -2414,6 +2425,7 @@ dependencies = [
     { name = "torchvision" },
     { name = "transformers" },
     { name = "trl" },
+    { name = "verifiers" },
     { name = "vllm" },
     { name = "wandb" },
 ]
@@ -2423,7 +2435,7 @@ requires-dist = [
     { name = "accelerate", specifier = ">=1.3.0" },
     { name = "datasets", specifier = ">=3.2.0" },
     { name = "deepspeed", specifier = ">=0.16.3" },
-    { name = "flash-attn", specifier = "==2.5.1.post1" },
+    { name = "flash-attn", specifier = ">=2.7.3" },
     { name = "gradio", specifier = ">=5.16.0" },
     { name = "imgcat", specifier = ">=0.6.0" },
     { name = "ipdb", specifier = ">=0.13.13" },
@@ -2436,6 +2448,7 @@ requires-dist = [
     { name = "torchvision", specifier = "==0.20.1" },
     { name = "transformers", git = "https://github.com/huggingface/transformers.git?rev=main" },
     { name = "trl", editable = "../trl" },
+    { name = "verifiers", editable = "../verifiers" },
     { name = "vllm", specifier = ">=0.7.2" },
     { name = "wandb", specifier = ">=0.19.5" },
 ]
@@ -3007,7 +3020,7 @@ name = "triton"
 version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "filelock", marker = "python_full_version < '3.13' and platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "filelock" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/78/eb/65f5ba83c2a123f6498a3097746607e5b2f16add29e36765305e4ac7fdd8/triton-3.1.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c8182f42fd8080a7d39d666814fa36c5e30cc00ea7eeeb1a2983dbb4c99a0fdc", size = 209551444 },
@@ -3148,6 +3161,35 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/19/f5b78616566ea68edd42aacaf645adbf71fbd83fc52281fba555dc27e3f1/uvloop-0.21.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f3df876acd7ec037a3d005b3ab85a7e4110422e4d9c1571d4fc89b0fc41b6816", size = 4701068 },
     { url = "https://files.pythonhosted.org/packages/47/57/66f061ee118f413cd22a656de622925097170b9380b30091b78ea0c6ea75/uvloop-0.21.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:bd53ecc9a0f3d87ab847503c2e1552b690362e005ab54e8a48ba97da3924c0dc", size = 4454428 },
     { url = "https://files.pythonhosted.org/packages/63/9a/0962b05b308494e3202d3f794a6e85abe471fe3cafdbcf95c2e8c713aabd/uvloop-0.21.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:a5c39f217ab3c663dc699c04cbd50c13813e31d917642d459fdcec07555cc553", size = 4660018 },
+]
+
+[[package]]
+name = "verifiers"
+version = "0.1.0"
+source = { editable = "../verifiers" }
+dependencies = [
+    { name = "accelerate" },
+    { name = "deepspeed" },
+    { name = "flash-attn" },
+    { name = "liger-kernel" },
+    { name = "setuptools" },
+    { name = "torch" },
+    { name = "trl" },
+    { name = "vllm" },
+    { name = "wandb" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", specifier = ">=1.3.0" },
+    { name = "deepspeed", specifier = ">=0.15.4" },
+    { name = "flash-attn", specifier = "==2.7.3" },
+    { name = "liger-kernel", specifier = ">=0.5.2" },
+    { name = "setuptools" },
+    { name = "torch", specifier = ">=2.5.1" },
+    { name = "trl", editable = "../trl" },
+    { name = "vllm", specifier = ">=0.7.2" },
+    { name = "wandb" },
 ]
 
 [[package]]

@@ -29,7 +29,7 @@ def get_eval_dataset():
 
 def load_model_and_tokenizer():
     model_config = ModelConfig(
-        model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-460",
+        model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-2300",
         torch_dtype="bfloat16",
         use_peft=False,
     )
