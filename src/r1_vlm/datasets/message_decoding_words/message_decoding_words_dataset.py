@@ -147,5 +147,5 @@ def create_dataset():
         "sunildkumar/message-decoding-words", token=os.getenv("HUGGINGFACE_HUB_TOKEN")
     )
 
-
-message_decoding_dataset = create_dataset()
+if __name__ == "__main__":
+    message_decoding_dataset = create_dataset()
