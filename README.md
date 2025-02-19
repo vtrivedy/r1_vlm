@@ -47,6 +47,10 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/d
 CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/train.py
 ```
 
+Results:
+![Format Reward](images/digit_recognition_format_reward.png)
+![Correctness Reward](images/digit_recognition_correctness_reward.png)
+
 ## Training:
 ```
 # run from root of repo
