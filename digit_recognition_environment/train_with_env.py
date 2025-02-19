@@ -84,7 +84,6 @@ trainer = QwenGRPOTrainer(
     model=model,
     processing_class=processor,
     reward_funcs=rubric,
-    tokenize_and_inject_images=None,
     args=training_args,
     train_dataset=dataset,
     env=vf_env,
