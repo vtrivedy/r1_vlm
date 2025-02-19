@@ -48,13 +48,58 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/tr
 ```
 
 Results:
-![Format Reward](images/digit_recognition_format_reward.png)
 ![Correctness Reward](images/digit_recognition_correctness_reward.png)
 
 # Task 2: Message Decoding
+This task is more complex. We've created a dataset of "coded messages". Each message is a common english word. We define a coding/decoding mapping that we use to scramble the word, creating a coded message. We then provide the model with the coded message and the decoder image, and ask the model to decode the message back to the original word. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities (technically, for some words, there is a unique solution but it is unlikely that the model knows this). You can see the full dataset
+[here](https://huggingface.co/datasets/sunildkumar/message-decoding-words).
+
+
+## Example Reasoning Trace:
+Here's an example where the message is "VISION". 
+
+![Decoder Image](images/example_decoder.webp)
+
+```
+system
+You are a helpful assistant. You first think about the reasoning process in the mind and then provide the user with the answer.
+
+user
+Use the decoder in the image to decode this coded message: "K X I X R S". The decoded message should be an english word. Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> "CAT" </answer>.
+
+assistant
+Let me solve this step by step.
+<think> 
+1. First, I'll decode each character in the message "K X I X R S" using the provided decoder:
+
+   K → V
+   X → I
+   I → S
+   X → I
+   R → O
+   S → N
+
+2. Now, I'll Combine the results: "V I S I O N".
+
+Answer: VISION
+
+Answer: VISION
+
+</think>
+<answer>VISION</answer>
+```
+
+You can train with:
+```bash 
+# 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_env/train.py
 
+# 2 GPU training, you'll need to adjust the number of generations in the train.py file.
+CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/train.py
+```
 
+Training results:
+![Correctness Reward](images/message_decoding_correctness_reward.png)
 
 
 
@@ -69,27 +114,5 @@ CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gp
 
 CUDA_VISIBLE_DEVICES=1 uv run train/train_counting.py
 
-
-CUDA_VISIBLE_DEVICES=1 uv run train/train_message_decoding.py
-
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_message_decoding.py 2>&1 | tee message_decoding_logs_$(date +%Y%m%d_%H%M%S).log
-
-
-# 2b message decoding new trainer single gpu
-CUDA_VISIBLE_DEVICES=1 uv run train/train_message_decoding_new_trainer.py
-
-# 2b message decoding new trainer all gpu
-CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu.yaml train/train_message_decoding_new_trainer.py 2>&1 | tee message_decoding_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
-
-# 3b word decoding single gpu
-CUDA_VISIBLE_DEVICES=1 uv run train/train_message_decoding_words.py
-
-# 3b word decoding 3 gpu
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_message_decoding_words.py 2>&1 | tee message_decoding_words_logs_$(date +%Y%m%d_%H%M%S).log
-
-
-
-# 3b message decoding words vllm 3 gpu for train, 1 for vllm
-CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_message_decoding_words_vllm.py 2>&1 | tee message_decoding_words_vllm_logs_$(date +%Y%m%d_%H%M%S).log
 
 ```
