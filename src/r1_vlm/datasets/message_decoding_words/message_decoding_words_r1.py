@@ -7,7 +7,7 @@ from tqdm import tqdm
 load_dotenv(dotenv_path=find_dotenv())
 
 # this holds the images/ directory created by message_decoding_words_dataset.py
-base_image_path = "/millcreek/home/sunil/r1_vlm/data/message_decoding_words"
+base_image_path = "/millcreek/home/sunil/r1_vlm/src/r1_vlm/datasets/message_decoding_words"
 
 
 def generate_r1_messages(example):
