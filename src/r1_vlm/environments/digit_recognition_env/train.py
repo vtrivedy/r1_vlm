@@ -31,8 +31,6 @@ model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     pretrained_model_name_or_path=model_config.model_name_or_path,
     torch_dtype=model_config.torch_dtype,
     use_cache=False,
-    # flash attention not supported on our trainer yet
-    # attn_implementation="flash_attention_2",
 )
 
 # use cache if not gradient checkpointing
@@ -48,8 +46,6 @@ processor = AutoProcessor.from_pretrained(
     model_config.model_name_or_path, padding_side="left"
 )
 
-# model on gpu 0, vllm on gpu 1
-
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
     output_dir="vlm-r1-digit-recognition-verifiers-integration",
@@ -61,7 +57,6 @@ training_args = GRPOConfig(
     save_steps=20,
     save_total_limit=50,
     num_train_epochs=1,
-    # starting with 1 gpu and small number of completions
     per_device_train_batch_size=5,
     num_generations=15,
     gradient_accumulation_steps=4,

@@ -27,7 +27,30 @@ class MessageDecodingEnv(SimpleVisionEnv):
     
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
         def correctness_reward_func(completions, **kwargs) -> List[float]:
-            pass
+            
+            # parse the predicted decoded message from each completion
+            responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
+            true_decoded_messages = kwargs["decoded_message"]    
+            
+            def check_answer(response, answer):
+                # the parser returns None if the answer is not found
+                if response is None:
+                    return 0.0
+                
+                try:
+                    response = response.strip().upper()
+                    answer = answer.strip().upper()
+                except Exception as e:
+                    print(f"Error in check_answer: {e}")
+                    return 0.0
+                
+                if response == answer:
+                    return 1.0
+                else:
+                    return 0.0
+                              
+            rewards = [check_answer(r, t) for r, t in zip(responses, true_decoded_messages)]
+            return rewards
         
         def format_reward_func(completions, **kwargs) -> List[float]:
             """

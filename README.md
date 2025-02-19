@@ -51,6 +51,13 @@ Results:
 ![Format Reward](images/digit_recognition_format_reward.png)
 ![Correctness Reward](images/digit_recognition_correctness_reward.png)
 
+# Task 2: Message Decoding
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_env/train.py
+
+
+
+
+
 ## Training:
 ```
 # run from root of repo
