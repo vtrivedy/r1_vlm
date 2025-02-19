@@ -2407,7 +2407,7 @@ wheels = [
 [[package]]
 name = "r1-vlm"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
     { name = "datasets" },

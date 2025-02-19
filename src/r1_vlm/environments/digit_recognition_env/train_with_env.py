@@ -1,9 +1,12 @@
 import os
 
-from digit_recognition_env import DigitRecognitionEnv
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
+
+from r1_vlm.environments.digit_recognition_env.digit_recognition_env import (
+    DigitRecognitionEnv,
+)
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
 os.environ["WANDB_PROJECT"] = "digit-recognition-verifiers-integration"
