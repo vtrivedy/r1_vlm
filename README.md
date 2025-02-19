@@ -1,23 +1,55 @@
 # r1_vlm
-Trying GRPO on a toy task on a small VLM.
-
+Extending GRPO to VLMs. 
 
 # Idea
 This [blog post](https://www.philschmid.de/mini-deepseek-r1) shows how GRPO an LLM to do r1 style reasoning
-on a toy problem. As far as I know, no one has tried this on a VLM. My idea is to generate a simple visual reasoning
-dataset (not unlike the counting game in the blog post) and see if a VLM can do it.
+on a toy problem. As far as I know, no one has tried this on a VLM (at the time that I originally wrote this, some other people have been working on this as well now). My original idea was to prove one can use GRPO on a VLM as well and show it can improve performance on a toy task. 
+Now that I've achieved this, next I'm trying to extend this to more complex tasks. Currently, I'm working on integrating the `verifiers` library, which will unlock standard patterns for more complex model
+interactions, like multi-step reasoning, and tool use.
 
-## Dataset
-Using the COCO dataset, I've generate a dataset of visual computation problems. For each image, I ask it to {add, subtract, multiply, divide}
-the counts of two classes that are present in the image. For example, "Multiply the number of dogs by the number of cats in the image".
+# Installation
+This project relies on forks of some dependencies. First clone this repo. Then clone the following repos adjaces to this one. The two forks are installed as editable dependencies into `r1_vlm`. I don't have a stable branch for which branch on these forks to use, as I'm actively changing them. You can see the latest PRs in the relevant repos or leave an issue on this repo and I'll help you out. 
+```
+1. git clone git@github.com:sunildkumar/r1_vlm.git
+2. git clone git@github.com:sunildkumar/trl.git # this is my fork of TRL with added support for VLMs, verifiers, and vllm.
+3. git clone git@github.com:sunildkumar/verifiers.git # this is my fork of the verifiers library, which updates the TRL dependency from HuggingFace's to my fork (above).
+```
 
-See the dataset [here](https://huggingface.co/datasets/sunildkumar/coco-computation-r1).
+Afterwards, your directory structure should look like this:
+```
+r1_vlm/
+trl/
+verifiers/
+```
+
+Then install with `uv`:
+```
+cd r1_vlm
+uv sync
+```
 
 
-https://huggingface.co/learn/cookbook/en/fine_tuning_vlm_trl is super helpful for sample code on how to FT a Qwen2VL generally. 
+# Task 1: Digit Recognition
+As proof that my code works, I trained Qwen2.5VL 3B on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either
+asked to return the list of digits in ascending order, or the sum of the digits.
 
-Custom fork of TRL for GRPO on VLMs: https://github.com/sunildkumar/trl. As of the time of writing, the latest version of GRPOTrainer does not support VLMs. 
+You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
 
+![Example of digit recognition task](images/digits_example.png)
+
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. I've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and not using deepspeed.
+```bash
+
+# 4 GPU training with deepspeed
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digit_recognition_env/train.py
+
+# 2 GPU training, you'll need to adjust the number of generations in the train.py file.
+CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/train.py
+```
+
+Results:
+![Format Reward](images/digit_recognition_format_reward.png)
+![Correctness Reward](images/digit_recognition_correctness_reward.png)
 
 ## Training:
 ```
@@ -30,30 +62,10 @@ CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gp
 
 CUDA_VISIBLE_DEVICES=1 uv run train/train_counting.py
 
-CUDA_VISIBLE_DEVICES=1 uv run train/train_digit_recognition.py
-
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_digit_recognition.py 2>&1 | tee digit_recognition_logs_$(date +%Y%m%d_%H%M%S).log
 
 CUDA_VISIBLE_DEVICES=1 uv run train/train_message_decoding.py
 
 CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_message_decoding.py 2>&1 | tee message_decoding_logs_$(date +%Y%m%d_%H%M%S).log
-
-
-CUDA_VISIBLE_DEVICES=1 uv run train/train_digit_recognition_new_trainer.py
-
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
-
-# 7b zero3
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only_zero3.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
-
-# 7b zero2 offload
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only_zero2_offload.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
-
-# 2b high completion run all gpu
-CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu.yaml train/train_digit_recognition_new_trainer.py 2>&1 | tee digit_recognition_new_trainer_logs_$(date +%Y%m%d_%H%M%S).log
-
-# restart training for 2b high completion run all gpu but turn off cosine schedule
-CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu.yaml train/train_digit_recognition_new_trainer_no_schedule.py 2>&1 | tee digit_recognition_new_trainer_no_schedule_logs_$(date +%Y%m%d_%H%M%S).log
 
 
 # 2b message decoding new trainer single gpu
@@ -73,13 +85,4 @@ CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gp
 # 3b message decoding words vllm 3 gpu for train, 1 for vllm
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml train/train_message_decoding_words_vllm.py 2>&1 | tee message_decoding_words_vllm_logs_$(date +%Y%m%d_%H%M%S).log
 
-
-# 3b digit recognition verifiers integration 1 gpu for training, 1 for vllm
-CUDA_VISIBLE_DEVICES=0,1 uv run digit_recognition_environment/train_with_env.py
-
-# 3b digit recognition verifiers integration 3 gpu for training, 1 for vllm
-CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml digit_recognition_environment/train_with_env.py 
 ```
-
-## Results
-I just started model training on February 2nd, 2025 5:12:25 PM, and it's still only about 250 training steps in. Will update once I have results!

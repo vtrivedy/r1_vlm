@@ -2,10 +2,11 @@ import re
 from typing import Any, List
 
 from datasets import Dataset, concatenate_datasets, load_dataset
-from simple_vision_env import SimpleVisionEnv
 from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
+
+from r1_vlm.environments.simple_vision_env import SimpleVisionEnv
 
 
 class DigitRecognitionEnv(SimpleVisionEnv):
