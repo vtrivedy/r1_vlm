@@ -17,12 +17,25 @@ filtered_sentences = [
     for s in sentences_dataset
     if len(s["text"]) >= shortest_length and len(s["text"]) <= longest_length
 ]
-print(f"After filtering, there are {len(filtered_sentences)} sentences in the dataset")
+print(
+    f"After filtering for length, there are {len(filtered_sentences)} sentences in the dataset"
+)
 
-# sort the sentences by length and interpolate over the range to get various lengths
+# filter out sentences that include  underscore ("_") character (as we will use this character as a delimiter in the coded message)
+filtered_sentences = [s for s in filtered_sentences if "_" not in s["text"]]
+print(
+    f"After filtering for underscore, there are {len(filtered_sentences)} sentences in the dataset"
+)
+
+# sort the sentences by length and interpolate over the range to get inputs of diverse lengths
 dataset_size = 10000
 sorted_sentences = sorted(filtered_sentences, key=lambda x: len(x["text"]))
-selected_sentences = sorted_sentences[:: int(len(sorted_sentences) / dataset_size)]
+# choose indices to sample from the sorted sentences
+indices = [
+    int(i * (len(sorted_sentences) - 1) / (dataset_size - 1))
+    for i in range(dataset_size)
+]
+selected_sentences = [sorted_sentences[i] for i in indices]
 # Convert back to a dataset
 sentences_dataset = sentences_dataset.from_list(selected_sentences)
 
