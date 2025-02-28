@@ -303,9 +303,12 @@ with gr.Blocks() as demo:
         lambda: (
             gr.update(interactive=True),  # Re-enable run button
             gr.update(visible=False),  # Hide loading indicator
+            gr.update(interactive=True, label="Enter a single word"),  # Re-enable word input
+            gr.update(interactive=True),  # Re-enable submit button
+            gr.update(visible=False),  # Hide encoded word display
         ),
         None,
-        [run_button, loading_indicator],
+        [run_button, loading_indicator, word_input, submit_button, encoded_word_display],
     )
 
 
