@@ -161,17 +161,25 @@ def encode_word(word, mapping):
 def validate_and_submit(word, mapping):
     # Check if input contains only letters
     if not word.replace(" ", "").isalpha():
-        return gr.update(), gr.update(), gr.update(), gr.update()
+        return (
+            gr.update(),  # word input
+            gr.update(),  # submit button
+            gr.update(interactive=False),  # run button - disable but keep visible
+            gr.update(visible=False)  # encoded word display
+        )
 
     word = word.lower()
     encoded_word = encode_word(word, mapping)
-
+    
+    # Only enable run button if we have a valid encoded word
+    has_valid_encoded_word = bool(encoded_word.strip())
+    
     # Return updates for input, submit button, run button, and encoded word display
     return (
         gr.update(value=word, interactive=False, label="Submitted Word"),
         gr.update(interactive=False),  # Disable submit button
-        gr.update(visible=True),  # Show the run button
-        gr.update(value=f"Encoded word: {encoded_word}", visible=True)  # Show encoded word
+        gr.update(interactive=has_valid_encoded_word),  # Enable run button only if valid, but always visible
+        gr.update(value=f"Encoded word: {encoded_word}", visible=has_valid_encoded_word)  # Show encoded word
     )
 
 
@@ -266,7 +274,7 @@ with gr.Blocks() as demo:
     # Group submit and run buttons vertically
     with gr.Column():  # Use Column instead of Row for vertical layout
         submit_button = gr.Button("Submit Word")
-        run_button = gr.Button("Run Model", visible=False)
+        run_button = gr.Button("Run Model", interactive=False)  # Initialize as visible but disabled
 
     # Output area for model response
     model_output = gr.Textbox(
@@ -301,7 +309,7 @@ with gr.Blocks() as demo:
     ).then(
         # Reset interface after generation
         lambda: (
-            gr.update(interactive=True),  # Re-enable run button
+            gr.update(interactive=False),  # Disable run button but keep visible
             gr.update(visible=False),  # Hide loading indicator
             gr.update(interactive=True, label="Enter a single word"),  # Re-enable word input
             gr.update(interactive=True),  # Re-enable submit button
