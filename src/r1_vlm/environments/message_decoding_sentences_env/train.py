@@ -53,7 +53,8 @@ training_args = GRPOConfig(
     output_dir="vlm-r1-message-decoding-sentences",
     learning_rate=1e-6,
     adam_beta2=0.98,
-    lr_scheduler_type="cosine",
+    # constant learning rate to ensure we continue to learn late in the curriculum. Maybe a mistake?
+    lr_scheduler_type="constant",
     warmup_steps=0,
     logging_steps=1,
     save_steps=20,
@@ -67,6 +68,8 @@ training_args = GRPOConfig(
     bf16=True,
     max_prompt_length=None,
     max_completion_length=1024,
+    # in order: correctness, edit distance, format, thinking
+    reward_weights=[1.0, 1.0, 1.0, 0.25],
     beta=0.001,
     temperature=1.0,
     sync_ref_model=True,
@@ -86,6 +89,8 @@ trainer = QwenGRPOTrainer(
     args=training_args,
     train_dataset=dataset,
     env=vf_env,
+    # False as we are training on a curriculum of examples, starting easy and getting harder
+    shuffle_dataset=False,
 )
 
 trainer.train()
