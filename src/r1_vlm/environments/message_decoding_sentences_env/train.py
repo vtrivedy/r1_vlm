@@ -95,4 +95,4 @@ trainer = QwenGRPOTrainer(
 
 trainer.train()
 
-# CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_sentences_env/train.py
+# CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_sentences_env/train.py  2>&1 | tee message_decoding_logs_$(date +%Y%m%d_%H%M%S).log

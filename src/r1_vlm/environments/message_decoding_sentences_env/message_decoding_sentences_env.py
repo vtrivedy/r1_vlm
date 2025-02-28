@@ -24,27 +24,25 @@ class MessageDecodingEnv(SimpleVisionEnv):
         dataset = load_dataset(self.dataset_name)["train"]
 
         # Curriculm learning
-        # select 500 "word" examples to start with
+        # select 4000 "word" examples to start with
         # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length
 
         word_examples = dataset.filter(lambda x: x["task"] == "word")
         sentence_examples = dataset.filter(lambda x: x["task"] == "sentence")
 
-        # choose 500 random "word" examples
-        word_examples = word_examples.shuffle(seed=42).select(range(500))
+        # choose 4000 random "word" examples
+        word_examples = word_examples.shuffle(seed=42).select(range(4000))
 
-        # Add a length column
+        # sort sentence examples by length
         def add_length(example):
             example["length"] = len(example["decoded_message"])
             return example
 
         sentence_examples = sentence_examples.map(add_length)
-
-        # Sort by length
         sentence_examples = sentence_examples.sort("length")
         sentence_examples = sentence_examples.remove_columns("length")
 
-        # concatenate the "word" and "sentence" examples
+        # combine the "word" and "sentence" examples
         dataset = concatenate_datasets([word_examples, sentence_examples])
 
         return dataset
@@ -148,23 +146,21 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
         def thinking_reward(completions, **kwargs):
             """
-            Rewards the model for thinking longer about the problem. Requires the model to properly format its response
-            to achieve this reward.
+            Rewards the model for thinking longer about the problem. Requires the model to achieve the format and correctness rewards
+            in order to achieve this reward - that way we only reward thinking if it leads to a better model.
             """
 
-            def check_format_bool(text: str) -> bool:
-                """
-                Returns True if the model properly formatted
-                """
-                return check_format(text) == 1.0
+            # find the completions that achieve this reward
+            formatted_properly_list = format_reward_func(completions, **kwargs)
+            answered_properly_list = correctness_reward_func(completions, **kwargs)
 
-            # find the completions that achieve the format reward
-            formatted_properly = [
-                check_format_bool(c[0]["content"]) for c in completions
+            can_achieve_thinking_reward = [
+                f == 1.0 and a == 1.0
+                for f, a in zip(formatted_properly_list, answered_properly_list)
             ]
 
-            # if nothing is formatted properly, no thinking reward
-            if not any(formatted_properly):
+            # if nothing can achieve the thinking reward, return 0s
+            if not any(can_achieve_thinking_reward):
                 return [0.0] * len(completions)
 
             # find how long each completion "thinks" for
@@ -174,14 +170,16 @@ class MessageDecodingEnv(SimpleVisionEnv):
             thinking_texts = ["" if t is None else t for t in thinking_texts]
             thinking_lengths = [len(t) for t in thinking_texts]
 
-            # find the max length that was formatted properly
+            # find the max length among the thinking texts that can achieve the thinking reward
             max_len = 0
-            for length, formatted_properly in zip(thinking_lengths, formatted_properly):
-                if formatted_properly:
+            for length, reward_available in zip(
+                thinking_lengths, can_achieve_thinking_reward
+            ):
+                if reward_available:
                     max_len = max(max_len, length)
 
-            # if no one thought, no thinking reward - e.g. <think></think>
-            if max_len == 0:
+            # if no one thought, no thinking reward - e.g. <think></think> is the longest thinking text
+            if max_len <= 0:
                 return [0.0] * len(completions)
 
             # normalize the thinking lengths by the max length
@@ -189,14 +187,19 @@ class MessageDecodingEnv(SimpleVisionEnv):
                 length / max_len for length in thinking_lengths
             ]
 
+            # a completion achieves the normalized reward if it meets the format and correctness requirements
             rewards = []
-            for normalized_length, formatted_properly in zip(
-                normalized_thinking_lengths, formatted_properly
+            for normalized_length, reward_available in zip(
+                normalized_thinking_lengths, can_achieve_thinking_reward
             ):
-                if formatted_properly:
+                if reward_available:
                     rewards.append(normalized_length)
                 else:
                     rewards.append(0.0)
+
+            # these should all be between 0 and 1
+            if max(rewards) > 1.0 or min(rewards) < 0.0:
+                raise ValueError(f"Rewards are not between 0 and 1: {rewards}")
 
             return rewards
 
@@ -206,11 +209,3 @@ class MessageDecodingEnv(SimpleVisionEnv):
             format_reward_func,
             thinking_reward,
         ]
-
-
-if __name__ == "__main__":
-    env = MessageDecodingEnv()
-    dataset = env.get_dataset()
-    import ipdb
-
-    ipdb.set_trace()
