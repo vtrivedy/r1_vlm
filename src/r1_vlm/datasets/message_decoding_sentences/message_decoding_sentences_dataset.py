@@ -57,13 +57,13 @@ def create_sample(example):
 
 
 def create_dataset():
-    sentences_dataset = load_dataset("sunildkumar/english-sentences", split="train")
     data = {
         "coded_message": [],
         "decoded_message": [],
         "mapping": [],
         "file_path": [],
         "image": [],
+        "task": [],
     }
 
     image_dir = Path(__file__).parent / "images"
@@ -73,19 +73,20 @@ def create_dataset():
     if len(list(image_dir.glob("*.png"))) > 0:
         raise ValueError("Image directory is not empty")
 
-    for i, example in tqdm(enumerate(sentences_dataset), total=len(sentences_dataset)):
+    words_dataset = load_dataset("sunildkumar/popular_english_words", split="train")
+    for i, example in tqdm(enumerate(words_dataset), total=len(words_dataset)):
         decoder_image, sentence, coded_sentence, mapping = create_sample(example)
 
-        # Store only the relative path starting from 'images/'
         fpath = f"images/{i}.png"
-
-        # Use full path for saving the image
         full_path = image_dir / f"{i}.png"
 
         # verify that the image doesn't already exist, if it does, something is wrong as we should error
         if full_path.exists():
             raise ValueError(f"Image {full_path} already exists")
 
+        # Use full path for saving the image
+        full_path = image_dir / f"{i}.png"
+
         decoder_image.save(full_path)
 
         data["coded_message"].append(coded_sentence)
@@ -93,27 +94,28 @@ def create_dataset():
         data["mapping"].append(mapping)
         data["file_path"].append(fpath)
         data["image"].append(decoder_image)
+        data["task"].append("word")
 
     # Get the index we should start numbering from for the words dataset
-    last_index = len(sentences_dataset)
+    last_index = len(words_dataset)
 
-    words_dataset = load_dataset("sunildkumar/popular_english_words", split="train")
-    for i, example in tqdm(enumerate(words_dataset), total=len(words_dataset)):
+    sentences_dataset = load_dataset("sunildkumar/english-sentences", split="train")
+
+    for i, example in tqdm(enumerate(sentences_dataset), total=len(sentences_dataset)):
         decoder_image, sentence, coded_sentence, mapping = create_sample(example)
 
-        # Continue numbering from where sentences dataset left off
         current_index = last_index + i
 
+        # Store only the relative path starting from 'images/'
         fpath = f"images/{current_index}.png"
+
+        # Use full path for saving the image
         full_path = image_dir / f"{current_index}.png"
 
         # verify that the image doesn't already exist, if it does, something is wrong as we should error
         if full_path.exists():
             raise ValueError(f"Image {full_path} already exists")
 
-        # Use full path for saving the image
-        full_path = image_dir / f"{current_index}.png"
-
         decoder_image.save(full_path)
 
         data["coded_message"].append(coded_sentence)
@@ -121,7 +123,7 @@ def create_dataset():
         data["mapping"].append(mapping)
         data["file_path"].append(fpath)
         data["image"].append(decoder_image)
-
+        data["task"].append("sentence")
     decoding_dataset = Dataset.from_dict(data)
 
     decoding_dataset.push_to_hub(

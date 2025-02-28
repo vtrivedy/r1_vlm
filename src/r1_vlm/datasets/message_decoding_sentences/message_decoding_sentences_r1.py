@@ -16,6 +16,7 @@ def generate_r1_messages(example):
     coded_message = example["coded_message"]
     decoded_message = example["decoded_message"]
     mapping = example["mapping"]
+    task = example["task"]
     file_path = os.path.join(base_image_path, example["file_path"])
 
     assert os.path.exists(file_path), f"File does not exist: {file_path}"
@@ -59,6 +60,7 @@ def generate_r1_messages(example):
         "coded_message": coded_message,
         "mapping": mapping,
         "decoded_message": decoded_message,  # No spaces here because we want the model to reply with the relevant english word.
+        "task": task,
     }
 
 
