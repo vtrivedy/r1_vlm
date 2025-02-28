@@ -143,18 +143,35 @@ def prepare_model_input(image, mapping, processor, submitted_word):
     return batch
 
 
-def validate_and_submit(word):
+def encode_word(word, mapping):
+    """
+    Encode a word using the given mapping.
+    """
+    if not word or not mapping:
+        return ""
+        
+    word = word.upper()
+    # reverse the decoder to encode the word
+    encoder = {v: k for k, v in mapping.items()}
+    # leaving the space as is
+    coded_message = [encoder[c] if c in encoder else c for c in word]
+    return " ".join(coded_message)
+
+
+def validate_and_submit(word, mapping):
     # Check if input contains only letters
     if not word.replace(" ", "").isalpha():
-        return gr.update(), gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update(), gr.update()
 
     word = word.lower()
+    encoded_word = encode_word(word, mapping)
 
-    # Replace input with submitted word and disable submit button
+    # Return updates for input, submit button, run button, and encoded word display
     return (
         gr.update(value=word, interactive=False, label="Submitted Word"),
-        gr.update(interactive=False),  # Disable submit button instead of hiding
+        gr.update(interactive=False),  # Disable submit button
         gr.update(visible=True),  # Show the run button
+        gr.update(value=f"Encoded word: {encoded_word}", visible=True)  # Show encoded word
     )
 
 
@@ -237,6 +254,15 @@ with gr.Blocks() as demo:
         show_copy_button=False,
     )
 
+    # Add encoded word display
+    encoded_word_display = gr.Textbox(
+        label="Encoded Word",
+        interactive=False,
+        visible=False,
+        max_lines=1,
+        show_copy_button=True,
+    )
+
     # Group submit and run buttons vertically
     with gr.Column():  # Use Column instead of Row for vertical layout
         submit_button = gr.Button("Submit Word")
@@ -259,8 +285,8 @@ with gr.Blocks() as demo:
     # Validate word on submit and update interface
     submit_button.click(
         fn=validate_and_submit,
-        inputs=[word_input],
-        outputs=[word_input, submit_button, run_button],
+        inputs=[word_input, current_mapping],
+        outputs=[word_input, submit_button, run_button, encoded_word_display],
     )
 
     # Run inference when run button is clicked
