@@ -86,13 +86,14 @@ def prepare_model_input(image, mapping, processor, submitted_word):
     # reverse the decoder to encode the word
     encoder = {v: k for k, v in mapping.items()}
     print(f"Encoder: {encoder}")
-    coded_message = [encoder[c] for c in decoded_message]
+    # leaving the space as is
+    coded_message = [encoder[c] if c in encoder else c for c in decoded_message]
     print(f"Coded message: {coded_message}")
 
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
 
-    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be an english word.'
+    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be an english word, phrase, or sentence. Please leave spaces as is.'
 
     ending = 'Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> "CAT" </answer>.'
 
@@ -144,7 +145,7 @@ def prepare_model_input(image, mapping, processor, submitted_word):
 
 def validate_and_submit(word):
     # Check if input contains only letters
-    if not word.isalpha():
+    if not word.replace(" ", "").isalpha():
         return gr.update(), gr.update(), gr.update()
 
     word = word.lower()
