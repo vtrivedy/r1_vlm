@@ -47,7 +47,9 @@ def add_random_punctuation(text, is_word_pair=False):
 def create_sample(example):
     sentence = example["text"] if "text" in example else example["word"]
 
-    mapping = generate_mapping()
+    alphabet = list("abcdefghijklmnopqrstuvwxyz")
+    assert len(alphabet) == 26
+    mapping = generate_mapping(alphabet)
 
     decoder_image = generate_decoder_image(mapping)
 
@@ -58,32 +60,31 @@ def create_sample(example):
     # reverse the mapping to encode the sentence
     reverse_mapping = {v: k for k, v in mapping.items()}
 
-    # create the coded sentence. We will be case agnostic: A and a will both be mapped to the same letter (while maintaining case in the original sentence)
-    # if we encounter a character that is not in the mapping, we will map it to itself.
-
+    # create the coded and decoded sentence. If we encounter a character that is not in the mapping,
+    # we will map it to itself.
     coded_sentence = ""
+    decoded_sentence = ""
     for char in sentence:
         # check if the character is in the mapping
         if char.isascii() and (char.isalpha() or char == " "):
-            is_upper = char.isupper()
+            is_lower = char.islower()
 
-            # pass the uppercase version of the character to the mapping
-            # .upper() on the space character is a no-op
-            key_char = char.upper() if not is_upper else char
+            # pass the lowercase version of the character to the mapping
+            # .lower() on the space character is a no-op
+            key_char = char.lower() if not is_lower else char
             mapped_char = reverse_mapping[key_char]
 
-            # maintain the case of the original character
-            if is_upper:
-                mapped_char = mapped_char.upper()
-            else:
-                mapped_char = mapped_char.lower()
-
+            # add lowercase char to the coded sentence
             coded_sentence += mapped_char
+
+            # use the lowercase version of the character in the decoded sentence too.
+            decoded_sentence += char.lower() if not is_lower else char
         # if the character is not in the mapping, we will map it to itself
         else:
             coded_sentence += char
+            decoded_sentence += char
 
-    return decoder_image, sentence, coded_sentence, mapping
+    return decoder_image, decoded_sentence, coded_sentence, mapping
 
 
 def create_dataset():
@@ -105,10 +106,8 @@ def create_dataset():
 
     words_dataset = load_dataset("sunildkumar/popular_english_words", split="train")
     for i, example in tqdm(enumerate(words_dataset), total=len(words_dataset)):
-        # randomly set letters to uppercase to improve robustness to capitalization.
-        # Add punctuation to improve robustness to punctuation.
+        # Add punctuation to improve robustness to symbols not in decoder.
         word = example["word"]
-        word = "".join(random.choice([c.upper(), c.lower()]) for c in word)
         word = add_random_punctuation(word)
 
         decoder_image, sentence, coded_sentence, mapping = create_sample({"word": word})
@@ -171,10 +170,6 @@ def create_dataset():
     for i in tqdm(range(num_pairs), total=num_pairs):
         # Select two random words
         word1, word2 = random.sample(words_list, 2)
-
-        # Randomize case for each word
-        word1 = "".join(random.choice([c.upper(), c.lower()]) for c in word1)
-        word2 = "".join(random.choice([c.upper(), c.lower()]) for c in word2)
 
         # Combine words with space and add random punctuation
         word_pair = f"{word1} {word2}"
