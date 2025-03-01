@@ -183,3 +183,4 @@ counting-mnist/
 dataset/*
 .gradio/certificate.pem
 src/r1_vlm/datasets/message_decoding_sentences/images/
+attention_visualization*
