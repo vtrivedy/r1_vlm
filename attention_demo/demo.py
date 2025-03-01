@@ -370,10 +370,9 @@ if __name__ == "__main__":
     )
 
     dataset = load_dataset("sunildkumar/message-decoding-words-r1")["train"]
-    import ipdb
 
-    ipdb.set_trace()
-    example = dataset[0]
+    examples = [ex for ex in dataset if ex["decoded_message"] == "SMART"]
+    example = examples[0]
 
     messages = example["messages"]
     for message in messages:
@@ -400,7 +399,7 @@ if __name__ == "__main__":
     print("Starting generation")
     generated_output = model.generate(
         **inputs,
-        max_new_tokens=128,
+        max_new_tokens=512,
         output_attentions=True,
         return_dict_in_generate=True,
     )
