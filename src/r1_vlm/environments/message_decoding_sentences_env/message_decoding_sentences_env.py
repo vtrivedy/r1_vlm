@@ -203,9 +203,9 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
             return rewards
 
+        # removed thinking_reward as it was actively hurting performance
         return [
             correctness_reward_func,
             edit_distance_reward_func,
             format_reward_func,
-            thinking_reward,
         ]

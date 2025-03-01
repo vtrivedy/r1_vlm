@@ -21,8 +21,11 @@ rubric = vf_env.get_rubric()
 # Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.
 gradient_checkpointing = False
 
+checkpoint = (
+    "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-2300"
+)
 model_config = ModelConfig(
-    model_name_or_path="Qwen/Qwen2.5-VL-3B-Instruct",
+    model_name_or_path=checkpoint,
     torch_dtype="bfloat16",
     use_peft=False,
 )
@@ -68,8 +71,8 @@ training_args = GRPOConfig(
     bf16=True,
     max_prompt_length=None,
     max_completion_length=1024,
-    # in order: correctness, edit distance, format, thinking
-    reward_weights=[1.0, 1.0, 1.0, 0.25],
+    # in order: correctness, edit distance, format
+    reward_weights=[1.0, 1.0, 1.0],
     beta=0.001,
     temperature=1.0,
     sync_ref_model=True,
