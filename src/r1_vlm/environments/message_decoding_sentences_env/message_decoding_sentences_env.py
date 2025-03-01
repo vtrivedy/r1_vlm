@@ -24,21 +24,23 @@ class MessageDecodingEnv(SimpleVisionEnv):
         dataset = load_dataset(self.dataset_name)["train"]
 
         # Curriculm learning
-        # select 4000 "word" examples to start with
-        # select all available "word_pair" examples, train on each 2x
-        # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length (10k)
+        # select 8000 "word" examples
+        # select 8000 "word_pair" examples
+        # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length (9k-ish)
 
         word_examples = dataset.filter(lambda x: x["task"] == "word")
         word_pair_examples = dataset.filter(lambda x: x["task"] == "word_pair")
         sentence_examples = dataset.filter(lambda x: x["task"] == "sentence")
 
-        # choose 4000 random "word" examples
-        word_examples = word_examples.shuffle(seed=42).select(range(4000))
+        # choose 8000 random "word" examples
+        word_examples = word_examples.shuffle(seed=42).select(range(8000))
 
-        # choose all "word_pair" examples and double it
-        word_pair_examples = word_pair_examples.shuffle(seed=42)
-        word_pair_examples = concatenate_datasets(
-            [word_pair_examples, word_pair_examples]
+        # choose 8000 random "word_pair" examples
+        # there are 4483 in the dataset, so we double and then take 8000 random
+        word_pair_examples = (
+            concatenate_datasets([word_pair_examples, word_pair_examples])
+            .shuffle(seed=42)
+            .select(range(8000))
         )
 
         # sort sentence examples by length
