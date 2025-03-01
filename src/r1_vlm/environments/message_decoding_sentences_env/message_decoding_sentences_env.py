@@ -2,7 +2,7 @@ import re
 from typing import Any, List
 
 import Levenshtein
-from datasets import Dataset, concatenate_datasets, load_dataset
+from datasets import Dataset, load_dataset
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -43,7 +43,9 @@ class MessageDecodingEnv(SimpleVisionEnv):
         sentence_examples = sentence_examples.remove_columns("length")
 
         # combine the "word" and "sentence" examples
-        dataset = concatenate_datasets([word_examples, sentence_examples])
+        # dataset = concatenate_datasets([word_examples, sentence_examples])
+
+        dataset = sentence_examples
 
         return dataset
 
