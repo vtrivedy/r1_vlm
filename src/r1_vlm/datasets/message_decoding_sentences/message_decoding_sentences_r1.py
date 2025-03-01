@@ -24,7 +24,7 @@ def generate_r1_messages(example):
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
 
-    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be an english word or sentence. If the coded message includes a character not in the decoder, you should return the original character. Underscore characters ("_") in the coded message should be mapped to a space (" ").'
+    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be one or more english words or a sentence. If the coded message includes a character not in the decoder, you should return the original character. Underscore characters ("_") in the coded message should be mapped to a space (" ").'
 
     ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> cat </answer> or <answer> This is the decoded message. </answer>."
 

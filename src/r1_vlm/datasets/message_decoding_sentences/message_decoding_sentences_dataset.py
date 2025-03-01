@@ -13,6 +13,36 @@ from r1_vlm.datasets.message_decoding_words.message_decoding_words_dataset impor
 # setting a seed for reproducibility
 random.seed(42)
 
+PUNCTUATION = ["!", ".", "?", ",", ";", ":"]
+
+
+def add_random_punctuation(text, is_word_pair=False):
+    if not is_word_pair:
+        # For single words, add punctuation at start or end
+        if random.random() < 0.3:  # 30% chance for punctuation
+            position = random.choice(["start", "end"])
+            punct = random.choice(PUNCTUATION)
+            return punct + text if position == "start" else text + punct
+        return text
+    else:
+        # For word pairs, we can add punctuation at start, between words, or end
+        words = text.split()
+        result = words[0]
+
+        # Chance for punctuation between words
+        if random.random() < 0.3:
+            result += random.choice(PUNCTUATION)
+
+        result += " " + words[1]
+
+        # Chance for punctuation at start or end
+        if random.random() < 0.3:
+            position = random.choice(["start", "end"])
+            punct = random.choice(PUNCTUATION)
+            result = punct + result if position == "start" else result + punct
+
+        return result
+
 
 def create_sample(example):
     sentence = example["text"] if "text" in example else example["word"]
@@ -75,7 +105,13 @@ def create_dataset():
 
     words_dataset = load_dataset("sunildkumar/popular_english_words", split="train")
     for i, example in tqdm(enumerate(words_dataset), total=len(words_dataset)):
-        decoder_image, sentence, coded_sentence, mapping = create_sample(example)
+        # randomly set letters to uppercase to improve robustness to capitalization.
+        # Add punctuation to improve robustness to punctuation.
+        word = example["word"]
+        word = "".join(random.choice([c.upper(), c.lower()]) for c in word)
+        word = add_random_punctuation(word)
+
+        decoder_image, sentence, coded_sentence, mapping = create_sample({"word": word})
 
         fpath = f"images/{i}.png"
         full_path = image_dir / f"{i}.png"
@@ -124,6 +160,46 @@ def create_dataset():
         data["file_path"].append(fpath)
         data["image"].append(decoder_image)
         data["task"].append("sentence")
+
+    # Get the index we should start numbering from for the word pairs
+    last_index = last_index + len(sentences_dataset)
+
+    # Create word pairs task
+    words_list = [example["word"] for example in words_dataset]
+    num_pairs = len(words_dataset) // 2  # Create half as many pairs as there are words
+
+    for i in tqdm(range(num_pairs), total=num_pairs):
+        # Select two random words
+        word1, word2 = random.sample(words_list, 2)
+
+        # Randomize case for each word
+        word1 = "".join(random.choice([c.upper(), c.lower()]) for c in word1)
+        word2 = "".join(random.choice([c.upper(), c.lower()]) for c in word2)
+
+        # Combine words with space and add random punctuation
+        word_pair = f"{word1} {word2}"
+        word_pair = add_random_punctuation(word_pair, is_word_pair=True)
+
+        decoder_image, sentence, coded_sentence, mapping = create_sample(
+            {"word": word_pair}
+        )
+
+        current_index = last_index + i
+        fpath = f"images/{current_index}.png"
+        full_path = image_dir / f"{current_index}.png"
+
+        if full_path.exists():
+            raise ValueError(f"Image {full_path} already exists")
+
+        decoder_image.save(full_path)
+
+        data["coded_message"].append(coded_sentence)
+        data["decoded_message"].append(sentence)
+        data["mapping"].append(mapping)
+        data["file_path"].append(fpath)
+        data["image"].append(decoder_image)
+        data["task"].append("word_pair")
+
     decoding_dataset = Dataset.from_dict(data)
 
     decoding_dataset.push_to_hub(

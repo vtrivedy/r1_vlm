@@ -2,7 +2,7 @@ import re
 from typing import Any, List
 
 import Levenshtein
-from datasets import Dataset, load_dataset
+from datasets import Dataset, concatenate_datasets, load_dataset
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -25,13 +25,21 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
         # Curriculm learning
         # select 4000 "word" examples to start with
-        # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length
+        # select all available "word_pair" examples, train on each 2x
+        # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length (10k)
 
         word_examples = dataset.filter(lambda x: x["task"] == "word")
+        word_pair_examples = dataset.filter(lambda x: x["task"] == "word_pair")
         sentence_examples = dataset.filter(lambda x: x["task"] == "sentence")
 
         # choose 4000 random "word" examples
         word_examples = word_examples.shuffle(seed=42).select(range(4000))
+
+        # choose all "word_pair" examples and double it
+        word_pair_examples = word_pair_examples.shuffle(seed=42)
+        word_pair_examples = concatenate_datasets(
+            [word_pair_examples, word_pair_examples]
+        )
 
         # sort sentence examples by length
         def add_length(example):
@@ -42,10 +50,10 @@ class MessageDecodingEnv(SimpleVisionEnv):
         sentence_examples = sentence_examples.sort("length")
         sentence_examples = sentence_examples.remove_columns("length")
 
-        # combine the "word" and "sentence" examples
-        # dataset = concatenate_datasets([word_examples, sentence_examples])
-
-        dataset = sentence_examples
+        # combine the three datasets in order.
+        dataset = concatenate_datasets(
+            [word_examples, word_pair_examples, sentence_examples]
+        )
 
         return dataset
 
