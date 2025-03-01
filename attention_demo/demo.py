@@ -134,6 +134,131 @@ def create_attention_visualization(
     imageio.imwrite(output_path, frames, fps=fps, codec="libx264")
 
 
+def visualize_image_attention(
+    inputs,
+    image,
+    attention_weights,
+    sequences,
+    processor,
+):
+    # get the patch grid
+    _, h, w = inputs["image_grid_thw"].cpu().numpy().squeeze(0)
+
+    # handle patch merging
+    merge_size = processor.image_processor.merge_size
+    h = h // merge_size
+    w = w // merge_size
+
+    total_patches = h * w
+
+    # there should be this many image tokens in the input
+    image_pad_token = "<|image_pad|>"
+    image_pad_id = processor.tokenizer.convert_tokens_to_ids(image_pad_token)
+
+    num_image_tokens = (inputs["input_ids"] == image_pad_id).sum().cpu().numpy().item()
+
+    assert num_image_tokens == total_patches, (
+        f"Expected {num_image_tokens=} to equal {total_patches=}"
+    )
+
+    # Create a transparent overlay for the grid
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    # Calculate the size of each grid cell in pixels
+    width, height = image.size
+    cell_width = width // w
+    cell_height = height // h
+
+    # Draw horizontal lines (black with 50% transparency)
+    for i in range(h + 1):
+        y = i * cell_height
+        draw.line([(0, y), (width, y)], fill=(0, 0, 0, 128), width=1)
+
+    # Draw vertical lines (black with 50% transparency)
+    for j in range(w + 1):
+        x = j * cell_width
+        draw.line([(x, 0), (x, height)], fill=(0, 0, 0, 128), width=1)
+
+    # Combine the original image with the overlay
+    image = image.convert("RGBA")
+    grid_image = Image.alpha_composite(image, overlay)
+
+    # convert back into RGB
+    grid_image = grid_image.convert("RGB")
+
+    grid_image = np.array(grid_image)
+
+    # attention_weights shape is [1, 16, seq_len, seq_len]
+    # First squeeze out the batch dimension
+    attention = attention_weights.squeeze(0)  # now [16, seq_len, seq_len]
+
+    # Get attention weights for the last generated token (last position)
+    # Average across attention heads
+    last_token_attention = attention[:, -1, :].mean(dim=0).detach().cpu().float()
+
+    # renormalize the attention weights so they sum to 1
+    last_token_attention = last_token_attention / last_token_attention.sum()
+    attention_weights_np = last_token_attention.numpy()
+
+    # now we should select the attention weights corresponding to the image tokens
+    image_tokens_mask = (inputs["input_ids"] == image_pad_id).cpu().numpy().squeeze(0)
+    # pad the mask on the right with False's - these are generated tokens
+    image_tokens_mask = np.pad(
+        image_tokens_mask,
+        (0, attention_weights_np.shape[0] - image_tokens_mask.shape[0]),
+        mode="constant",
+        constant_values=False,
+    )
+
+    assert image_tokens_mask.shape == attention_weights_np.shape, (
+        f"The image tokens mask and attention weights shape mismatch: {image_tokens_mask.shape=} {attention_weights_np.shape=}"
+    )
+
+    # now we should select the attention weights corresponding to the image tokens
+    attention_weights_np = attention_weights_np[image_tokens_mask]
+
+    return grid_image
+
+
+def create_image_attention_demo(
+    inputs,
+    image,
+    attention_weights,
+    sequences,
+    processor,
+    layer_idx=-1,
+    fps=2,
+    output_path="visual_attention_demo.mp4",
+):
+    """
+    Args:
+        inputs: Inputs to the model
+        image: PIL image that was passed to the model
+        attention_weights: Attention weights from the model during generation
+        sequences: Generated sequences from the model during generation
+    """
+    num_steps = len(attention_weights)
+    base_sequence = sequences.shape[1] - num_steps
+
+    # Store frames in memory
+    frames = []
+
+    for step in tqdm(range(1, num_steps)):  # start from 1 as step 0 is just the input
+        attention_weights_step = attention_weights[step][
+            layer_idx
+        ]  # get specified layer's attention
+        current_tokens = sequences[0][: base_sequence + step]
+
+        frame = visualize_image_attention(
+            inputs, image, attention_weights_step, current_tokens, processor
+        )
+        frames.append(frame)
+
+    # Write the movie
+    imageio.imwrite(output_path, frames, fps=fps, codec="libx264")
+
+
 if __name__ == "__main__":
     checkpoint = (
         "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-2300"
@@ -187,21 +312,25 @@ if __name__ == "__main__":
     )
     print("Generation complete")
 
-    # Get number of layers from the first attention output
-    num_layers = len(generated_output.attentions[0])
-    print(f"Creating visualizations for {num_layers} layers...")
+    # create text visualization for layer 20
+    layer_idx = 20
+    output_path = f"attention_visualization_layer{layer_idx}.mp4"
+    create_attention_visualization(
+        generated_output.attentions,
+        generated_output.sequences,
+        processor,
+        layer_idx=layer_idx,
+        fps=2,
+        output_path=output_path,
+    )
 
-    # Create visualization for each layer
-    for layer_idx in tqdm(range(num_layers), desc="Processing layers"):
-        output_path = f"attention_visualization_layer{layer_idx}.mp4"
-        create_attention_visualization(
-            generated_output.attentions,
-            generated_output.sequences,
-            processor,
-            layer_idx=layer_idx,
-            fps=2,
-            output_path=output_path,
-        )
-        print(f"Created {output_path}")
-
-    print("All visualizations complete!")
+    # create visual attention demo for layer 20
+    output_path = f"visual_attention_demo_layer{layer_idx}.mp4"
+    create_image_attention_demo(
+        inputs,
+        image_inputs[0],
+        generated_output.attentions,
+        generated_output.sequences,
+        processor,
+        layer_idx=layer_idx,
+    )
