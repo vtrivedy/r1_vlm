@@ -24,10 +24,20 @@ def generate_r1_messages(example):
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
 
-    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be one or more english words. Underscore characters ("_") in the coded message should be mapped to a space (" ") when decoding.'
+    instruction = (
+        f'Use the decoder in the image to decode this coded message: "{coded_message}". '
+        "The decoded message will be one or more words. Underscore characters "
+        '("_") in the coded message should be mapped to a space (" ") when decoding.'
+    )
 
-    ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> cat </answer> or <answer> this is the decoded message. </answer>. You may think for as long as you need to. You should verify your answer as carefully as possible while thinking before answering."
-
+    ending = (
+        "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. "
+        "While thinking, you must include a section with the decoded characters using <chars></chars> tags. "
+        "The <chars> section should include the decoded characters in the order they are decoded. It should include the "
+        "underscore character wherever there is a space in the decoded message. For example, if the coded message is "
+        "a b c _ d e f, the <chars> section might be <chars> c a t _ d o g </chars>. Once you are done thinking, "
+        "provide your answer in the <answer> section, e.g. <answer> cat dog </answer>."
+    )
     instruction = f"{instruction} {ending}"
 
     r1_messages = [

@@ -2,7 +2,7 @@ import random
 import re
 from typing import Any, List
 
-from datasets import Dataset, concatenate_datasets, load_dataset, train_test_split
+from datasets import Dataset, concatenate_datasets, load_dataset
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -18,7 +18,7 @@ class MessageDecodingEnv(SimpleVisionEnv):
     ):
         super().__init__(system_prompt=system_prompt, **kwargs)
         self.dataset_name = dataset
-        self.parser = XMLParser(fields=["think", "answer"])
+        self.parser = XMLParser(fields=["think", "answer", "chars"])
 
     def get_dataset(self) -> Dataset:
         dataset = load_dataset(self.dataset_name)["train"]
@@ -28,15 +28,17 @@ class MessageDecodingEnv(SimpleVisionEnv):
         sentence_examples = dataset.filter(lambda x: x["task"] == "sentence")
 
         # split into train and test
-        word_examples, word_examples_test = train_test_split(
-            word_examples, test_size=0.2, seed=42
-        )
-        word_pair_examples, word_pair_examples_test = train_test_split(
-            word_pair_examples, test_size=0.2, seed=42
-        )
-        sentence_examples, sentence_examples_test = train_test_split(
-            sentence_examples, test_size=0.2, seed=42
-        )
+        word_examples = word_examples.train_test_split(test_size=0.2, seed=42)
+        word_examples_train = word_examples["train"]
+        word_examples_test = word_examples["test"]
+
+        word_pair_examples = word_pair_examples.train_test_split(test_size=0.2, seed=42)
+        word_pair_examples_train = word_pair_examples["train"]
+        word_pair_examples_test = word_pair_examples["test"]
+
+        sentence_examples = sentence_examples.train_test_split(test_size=0.2, seed=42)
+        sentence_examples_train = sentence_examples["train"]
+        sentence_examples_test = sentence_examples["test"]
 
         # the test dataset is just the concatenation of the three test datasets
         test_dataset = concatenate_datasets(
@@ -47,16 +49,16 @@ class MessageDecodingEnv(SimpleVisionEnv):
         train_dataset_length = 100000
         train_dataset = []
         while len(train_dataset) < train_dataset_length:
-            word_idx = random.randint(0, len(word_examples) - 1)
-            word_example = word_examples[word_idx]
+            word_idx = random.randint(0, len(word_examples_train) - 1)
+            word_example = word_examples_train[word_idx]
             train_dataset.append(word_example)
 
-            word_pair_idx = random.randint(0, len(word_pair_examples) - 1)
-            word_pair_example = word_pair_examples[word_pair_idx]
+            word_pair_idx = random.randint(0, len(word_pair_examples_train) - 1)
+            word_pair_example = word_pair_examples_train[word_pair_idx]
             train_dataset.append(word_pair_example)
 
-            sentence_idx = random.randint(0, len(sentence_examples) - 1)
-            sentence_example = sentence_examples[sentence_idx]
+            sentence_idx = random.randint(0, len(sentence_examples_train) - 1)
+            sentence_example = sentence_examples_train[sentence_idx]
             train_dataset.append(sentence_example)
 
         train_dataset = Dataset.from_list(train_dataset)
@@ -64,9 +66,40 @@ class MessageDecodingEnv(SimpleVisionEnv):
         return train_dataset, test_dataset
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+        def chars_intermediate_reward_func(completions, **kwargs) -> List[float]:
+            """
+            Reward function that checks if the <chars> section is correct
+            """
+            responses = [self.parser.parse(c[0]["content"]).chars for c in completions]
+            true_chars = kwargs["decoded_message"]
+
+            # convert true chars to the format we expect in <chars>
+            # e.g. "cat dog" -> "c a t _ d o g" or "cat" -> "c a t"
+            def format_chars(text: str) -> str:
+                words = text.split()
+                spaced_words = [" ".join(word) for word in words]
+                return " _ ".join(spaced_words)
+
+            formatted_true_chars = [format_chars(msg) for msg in true_chars]
+
+            def check_chars(response, answer):
+                if response is None:
+                    return 0.0
+                try:
+                    response = response.strip()
+                    answer = answer.strip()
+                    return 1.0 if response == answer else 0.0
+                except Exception:
+                    return 0.0
+
+            rewards = [
+                check_chars(r, t) for r, t in zip(responses, formatted_true_chars)
+            ]
+            return rewards
+
         def correctness_reward_func(completions, **kwargs) -> List[float]:
             """
-            1.0 if exactly correct, otherwise 0.0
+            1.0 if exactly correct, otherwise 0.0. Conditioned on getting the the <chars> section correct.
             """
             # parse the predicted decoded message from each completion
             responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
@@ -89,21 +122,44 @@ class MessageDecodingEnv(SimpleVisionEnv):
                 else:
                     return 0.0
 
-            rewards = [
+            # check which completions got the <chars> section correct - boolean mask
+            chars_intermediate_reward = chars_intermediate_reward_func(
+                completions, **kwargs
+            )
+            chars_correct = [r == 1.0 for r in chars_intermediate_reward]
+
+            answers_correct = [
                 check_answer(r, t) for r, t in zip(responses, true_decoded_messages)
             ]
+
+            # achieves the answer reward IFF <chars> correct as well.
+            rewards = []
+            for char_correct, answer_correct in zip(chars_correct, answers_correct):
+                if char_correct:
+                    rewards.append(answer_correct)
+                else:
+                    rewards.append(0.0)
+
             return rewards
 
         def check_format(text: str) -> float:
             """
             Helper function to check if the format is correct
+
+            Desired format:
+            <think>
+            Some initial thinking
+            <chars> c a t </chars>
+            More thinking after
+            </think>
+            <answer> cat </answer>
             """
             # remove the bootstrap prompt from the text if it appears at the start
             text = text.removeprefix("Let me solve this step by step.\n")
 
             try:
                 # Check if the format is correct
-                regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
+                regex = r"^<think>[\s\S]*?<chars>[\s\S]*?<\/chars>[\s\S]*?<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
                 match = re.search(regex, text, re.DOTALL)
 
@@ -126,6 +182,7 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
         # removed thinking_reward as it was actively hurting performance
         return [
+            chars_intermediate_reward_func,
             correctness_reward_func,
             format_reward_func,
         ]
