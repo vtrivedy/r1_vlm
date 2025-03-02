@@ -15,7 +15,7 @@ os.environ["WANDB_ENTITY"] = "groundlightai"
 os.environ["WANDB_PROJECT"] = "message-decoding-words-and-sentences"
 
 vf_env = MessageDecodingEnv()
-dataset = vf_env.get_dataset()
+train_dataset, test_dataset = vf_env.get_dataset()
 rubric = vf_env.get_rubric()
 
 # Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.
@@ -86,7 +86,7 @@ trainer = QwenGRPOTrainer(
     processing_class=processor,
     reward_funcs=rubric,
     args=training_args,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
     env=vf_env,
     # False as we are training on a curriculum of examples, starting easy and getting harder
     shuffle_dataset=False,

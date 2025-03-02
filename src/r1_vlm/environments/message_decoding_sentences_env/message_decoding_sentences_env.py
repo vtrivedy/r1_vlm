@@ -1,8 +1,9 @@
+import random
 import re
 from typing import Any, List
 
 import Levenshtein
-from datasets import Dataset, concatenate_datasets, load_dataset
+from datasets import Dataset, concatenate_datasets, load_dataset, train_test_split
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -23,38 +24,45 @@ class MessageDecodingEnv(SimpleVisionEnv):
     def get_dataset(self) -> Dataset:
         dataset = load_dataset(self.dataset_name)["train"]
 
-        # Curriculm learning
-        # select 4000 "word" examples
-        # select 4000 "word_pair" examples
-        # then select all "sentence" examples, sorted from shortest to longest by "decoded_message" length (9k-ish)
-
         word_examples = dataset.filter(lambda x: x["task"] == "word")
         word_pair_examples = dataset.filter(lambda x: x["task"] == "word_pair")
         sentence_examples = dataset.filter(lambda x: x["task"] == "sentence")
-        print(
-            f"There are {len(word_examples)} word examples, {len(word_pair_examples)} word_pair examples, and {len(sentence_examples)} sentence examples"
+
+        # split into train and test
+        word_examples, word_examples_test = train_test_split(
+            word_examples, test_size=0.2, seed=42
+        )
+        word_pair_examples, word_pair_examples_test = train_test_split(
+            word_pair_examples, test_size=0.2, seed=42
+        )
+        sentence_examples, sentence_examples_test = train_test_split(
+            sentence_examples, test_size=0.2, seed=42
         )
 
-        # choose 4000 random "word" examples and word pair examples
-        word_examples = word_examples.shuffle(seed=42).select(range(4000))
-
-        word_pair_examples = word_pair_examples.shuffle(seed=42).select(range(4000))
-
-        # sort sentence examples by length
-        def add_length(example):
-            example["length"] = len(example["decoded_message"])
-            return example
-
-        sentence_examples = sentence_examples.map(add_length)
-        sentence_examples = sentence_examples.sort("length")
-        sentence_examples = sentence_examples.remove_columns("length")
-
-        # combine the three datasets in order.
-        dataset = concatenate_datasets(
-            [word_examples, word_pair_examples, sentence_examples]
+        # the test dataset is just the concatenation of the three test datasets
+        test_dataset = concatenate_datasets(
+            [word_examples_test, word_pair_examples_test, sentence_examples_test]
         )
 
-        return dataset
+        # the train dataset is interleaved from the three tasks, sampling randomly
+        train_dataset_length = 100000
+        train_dataset = []
+        while len(train_dataset) < train_dataset_length:
+            word_idx = random.randint(0, len(word_examples) - 1)
+            word_example = word_examples[word_idx]
+            train_dataset.append(word_example)
+
+            word_pair_idx = random.randint(0, len(word_pair_examples) - 1)
+            word_pair_example = word_pair_examples[word_pair_idx]
+            train_dataset.append(word_pair_example)
+
+            sentence_idx = random.randint(0, len(sentence_examples) - 1)
+            sentence_example = sentence_examples[sentence_idx]
+            train_dataset.append(sentence_example)
+
+        train_dataset = Dataset.from_list(train_dataset)
+
+        return train_dataset, test_dataset
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
         def correctness_reward_func(completions, **kwargs) -> List[float]:
