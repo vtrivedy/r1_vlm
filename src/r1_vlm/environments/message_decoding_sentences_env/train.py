@@ -67,8 +67,8 @@ training_args = GRPOConfig(
     bf16=True,
     max_prompt_length=None,
     max_completion_length=512,
-    # in order: correctness, edit distance, format
-    reward_weights=[1.0, 0.25, 1.0],
+    # in order: correctness, format
+    reward_weights=[1.0, 1.0],
     beta=0.001,
     temperature=1.0,
     sync_ref_model=True,
