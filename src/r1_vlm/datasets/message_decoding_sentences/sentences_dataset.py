@@ -2,14 +2,33 @@ import random
 
 from datasets import load_dataset
 
-# creates a dataset of sentences that we will use for this task, starting from https://huggingface.co/datasets/agentlans/high-quality-english-sentences
-# see the dataset here: https://huggingface.co/datasets/sunildkumar/english-sentences
+# creates a dataset of sentences that we will use for this task
+# filters out characters that are not in the decoder
 
-sentences_dataset = load_dataset(
-    "agentlans/high-quality-english-sentences", split="train"
+sentences_dataset = load_dataset("c2p-cmd/Good-Quotes-Authors", "HUGE", split="train")
+
+
+# filter each sentence to only include characters in the decoder
+def char_in_decoder(char: str) -> bool:
+    return char.isascii() and (char.isalpha() or char == " ")
+
+
+def clean_sentence(example: dict) -> dict:
+    sentence = example["quote"]
+    if sentence is None:
+        return {"text": ""}
+    cleaned = "".join(char for char in sentence if char_in_decoder(char))
+    return {"text": cleaned}
+
+
+sentences_dataset = sentences_dataset.map(clean_sentence)
+sentences_dataset = sentences_dataset.remove_columns(["quote", "author", "category"])
+
+# filter out examples that are less than 3 words long
+sentences_dataset = sentences_dataset.filter(lambda x: len(x["text"].split()) >= 3)
+print(
+    f"After filtering for number of words per sentence, there are {len(sentences_dataset)} sentences in the dataset"
 )
-print(f"There are {len(sentences_dataset)} sentences in the dataset")
-
 
 # filter out sentences that are too short or too long
 shortest_length = 1
@@ -30,7 +49,7 @@ print(
 )
 
 # sort the sentences by length and interpolate over the range to get inputs of diverse lengths
-dataset_size = 10000
+dataset_size = 20000
 # Group sentences into 10 length buckets (0-10, 10-20, ..., 90-100)
 buckets = [[] for _ in range(10)]
 for sentence in filtered_sentences:

@@ -24,9 +24,9 @@ def generate_r1_messages(example):
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
 
-    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be one or more english words or a sentence. If the coded message includes a character not in the decoder, you should return the original character. Underscore characters ("_") in the coded message should be mapped to a space (" ").'
+    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be one or more english words. Underscore characters ("_") in the coded message should be mapped to a space (" ") when decoding.'
 
-    ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> cat </answer> or <answer> this is the decoded message. </answer>."
+    ending = "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> cat </answer> or <answer> this is the decoded message. </answer>. You may think for as long as you need to. You should verify your answer as carefully as possible while thinking before answering."
 
     instruction = f"{instruction} {ending}"
 
@@ -59,7 +59,7 @@ def generate_r1_messages(example):
         "messages": r1_messages,
         "coded_message": coded_message,
         "mapping": mapping,
-        "decoded_message": decoded_message,  # No spaces here because we want the model to reply with the relevant english word.
+        "decoded_message": decoded_message,  # No spaces here because we want the model to reply with the relevant english word(s).
         "task": task,
     }
 
