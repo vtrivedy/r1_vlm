@@ -4,9 +4,6 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
 
-from r1_vlm.environments.message_decoding_env.message_decoding_env import (
-    MessageDecodingEnv,
-)
 from r1_vlm.environments.message_decoding_sentences_env.message_decoding_sentences_env import (
     MessageDecodingEnv,
 )
@@ -60,15 +57,15 @@ training_args = GRPOConfig(
     save_steps=20,
     save_total_limit=50,
     num_train_epochs=1,
-    per_device_train_batch_size=5,
-    num_generations=15,
+    per_device_train_batch_size=4,
+    num_generations=12,
     gradient_accumulation_steps=4,
     gradient_checkpointing=gradient_checkpointing,
     bf16=True,
     max_prompt_length=None,
     max_completion_length=512,
-    # in order: correctness, format
-    reward_weights=[1.0, 1.0],
+    # in order: chars, correctness, format
+    reward_weights=[1.0, 1.0, 1.0],
     beta=0.001,
     temperature=1.0,
     sync_ref_model=True,
@@ -76,7 +73,7 @@ training_args = GRPOConfig(
     eval_strategy="no",
     log_completions=True,
     use_vllm=True,
-    vllm_gpu_memory_utilization=0.2,
+    vllm_gpu_memory_utilization=0.15,
     report_to="wandb",
     vllm_device="cuda:3",
 )
@@ -88,7 +85,7 @@ trainer = QwenGRPOTrainer(
     args=training_args,
     train_dataset=train_dataset,
     env=vf_env,
-    # False as we are training on a curriculum of examples, starting easy and getting harder
+    # False as we are training on a curriculum of examples
     shuffle_dataset=False,
 )
 

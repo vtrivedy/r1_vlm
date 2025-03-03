@@ -2,6 +2,7 @@ import random
 import re
 from typing import Any, List
 
+import Levenshtein
 from datasets import Dataset, concatenate_datasets, load_dataset
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
@@ -20,7 +21,7 @@ class MessageDecodingEnv(SimpleVisionEnv):
         self.dataset_name = dataset
         self.parser = XMLParser(fields=["think", "answer", "chars"])
 
-    def get_dataset(self) -> Dataset:
+    def get_dataset(self) -> tuple[Dataset, Dataset]:
         dataset = load_dataset(self.dataset_name)["train"]
 
         word_examples = dataset.filter(lambda x: x["task"] == "word")
@@ -68,10 +69,11 @@ class MessageDecodingEnv(SimpleVisionEnv):
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
         def chars_intermediate_reward_func(completions, **kwargs) -> List[float]:
             """
-            Reward function that checks if the <chars> section is correct
+            Reward function that checks if the <chars> section is correct. Reward is proportional to 1 - edit distance.
             """
             responses = [self.parser.parse(c[0]["content"]).chars for c in completions]
             true_chars = kwargs["decoded_message"]
+            coded_messages = kwargs["coded_message"]
 
             # convert true chars to the format we expect in <chars>
             # e.g. "cat dog" -> "c a t _ d o g" or "cat" -> "c a t"
@@ -82,18 +84,34 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
             formatted_true_chars = [format_chars(msg) for msg in true_chars]
 
-            def check_chars(response, answer):
+            def check_chars(response, answer, coded_message):
                 if response is None:
                     return 0.0
                 try:
                     response = response.strip()
                     answer = answer.strip()
-                    return 1.0 if response == answer else 0.0
+
+                    edit_distance_answer = Levenshtein.distance(response, answer)
+                    edit_distance_coded_message = Levenshtein.distance(
+                        response, coded_message
+                    )
+
+                    # no reward if the chars data is more similar to the coded message than the answer
+                    if edit_distance_coded_message < edit_distance_answer:
+                        return 0.0
+
+                    reward = 1 - edit_distance_answer / max(len(answer), len(response))
+
+                    reward = min(max(0.0, reward), 1.0)
+
+                    return reward
+
                 except Exception:
                     return 0.0
 
             rewards = [
-                check_chars(r, t) for r, t in zip(responses, formatted_true_chars)
+                check_chars(r, t, c)
+                for r, t, c in zip(responses, formatted_true_chars, coded_messages)
             ]
             return rewards
 
@@ -153,17 +171,19 @@ class MessageDecodingEnv(SimpleVisionEnv):
             More thinking after
             </think>
             <answer> cat </answer>
+
+            # TODO: This isn't exactly correct as we allow more than one think section.
             """
             # remove the bootstrap prompt from the text if it appears at the start
             text = text.removeprefix("Let me solve this step by step.\n")
 
             try:
                 # Check if the format is correct
-                regex = r"^<think>[\s\S]*?<chars>[\s\S]*?<\/chars>[\s\S]*?<\/think>\n<answer>([\s\S]*?)<\/answer>$"
+                regex = r"^<think>([\s\S]*?)<chars>([\s\S]*?)<\/chars>[\s\S]*?<\/think>\n<answer>([\s\S]*?)<\/answer>$"
 
-                match = re.search(regex, text, re.DOTALL)
+                regex_match = re.search(regex, text, re.DOTALL)
 
-                if match is None or len(match.groups()) != 2:
+                if regex_match is None or len(regex_match.groups()) != 3:
                     return 0.0
                 else:
                     return 1.0
@@ -186,3 +206,43 @@ class MessageDecodingEnv(SimpleVisionEnv):
             correctness_reward_func,
             format_reward_func,
         ]
+
+
+if __name__ == "__main__":
+    # Test showing we allow more than one think section. Example 1 should fail and 2 should pass, but both pass right now.
+    env = MessageDecodingEnv()
+    functions = env.get_rubric()
+    format_fn = functions[2]
+
+    example1 = """<think>I will go through each character in the coded message "j n v t l y" one by one and use the decoder table to find the corresponding decoded character.
+j → p
+n → l
+v → e
+t → n
+l → t
+y → y
+<chars> p l e n t y </chars>
+</think>
+<think>
+I have now decoded the entire coded message.
+</think>
+<answer> pylent </answer>"""
+
+    example1 = [{"content": example1}]
+
+    print(f"Example 1: {format_fn([example1])}")
+
+    example2 = """<think>I will go through each character in the coded message "j n v t l y" one by one and use the decoder table to find the corresponding decoded character.
+j → p
+n → l
+v → e
+t → n
+l → t
+y → y
+<chars> p l e n t y </chars>
+</think>
+<answer> pylent </answer>"""
+
+    example2 = [{"content": example2}]
+
+    print(f"Example 2: {format_fn([example2])}")
