@@ -17,7 +17,7 @@ from trl import ModelConfig
 
 
 def get_eval_dataset():
-    full_dataset = load_dataset("sunildkumar/message-decoding-words")["train"]
+    full_dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences")["train"]
     full_dataset = full_dataset.shuffle(seed=42)
 
     # split the dataset with the same seed as used in the training script
@@ -80,7 +80,7 @@ def prepare_model_input(image, mapping, processor, submitted_word):
     Returns:
         dict: The processed inputs ready for the model
     """
-    decoded_message = submitted_word.upper()
+    decoded_message = submitted_word.lower()
     print(f"Decoded message: {decoded_message}")
 
     # reverse the decoder to encode the word
@@ -93,13 +93,24 @@ def prepare_model_input(image, mapping, processor, submitted_word):
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
 
-    instruction = f'Use the decoder in the image to decode this coded message: "{coded_message}". The decoded message should be an english word, phrase, or sentence. Please leave spaces as is.'
+    instruction = (
+        f'Use the decoder in the image to decode this coded message: "{coded_message}". '
+        "The decoded message will be one or more words. Underscore characters "
+        '("_") in the coded message should be mapped to a space (" ") when decoding.'
+    )
 
-    ending = 'Show your work in <think> </think> tags and return the answer in <answer> </answer> tags, for example <answer> "CAT" </answer>.'
-
+    ending = (
+        "Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. "
+        "While thinking, you must include a section with the decoded characters using <chars></chars> tags. "
+        "The <chars> section should include the decoded characters in the order they are decoded. It should include the "
+        "underscore character wherever there is a space in the decoded message. For example, if the coded message is "
+        "a b c _ d e f, the <chars> section might be <chars> c a t _ d o g </chars>. Once you are done thinking, "
+        "provide your answer in the <answer> section, e.g. <answer> cat dog </answer>."
+    )
     instruction = f"{instruction} {ending}"
 
     print(f"Instruction: {instruction}")
+
     r1_messages = [
         {
             "role": "system",
@@ -150,7 +161,7 @@ def encode_word(word, mapping):
     if not word or not mapping:
         return ""
         
-    word = word.upper()
+    word = word.lower()
     # reverse the decoder to encode the word
     encoder = {v: k for k, v in mapping.items()}
     # leaving the space as is
