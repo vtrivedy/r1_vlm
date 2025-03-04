@@ -21,7 +21,7 @@ def create_sample(example):
     assert len(alphabet) == 26
     mapping = generate_mapping(alphabet)
 
-    decoder_image = generate_decoder_image(mapping)
+    decoder_image = generate_decoder_image(mapping=mapping, image_size=400)
 
     # add a mapping for the underscore ("_") character. It will map to " " (space).
     # This is so we can effectively communicate the space character in the coded message.

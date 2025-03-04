@@ -1,5 +1,5 @@
 # seeing if we can visualize the attention weights during decoding
-# run with CUDA_VISIBLE_DEVICES=0 uv run attention_demo/demo.py
+# run with CUDA_VISIBLE_DEVICES=0,1 uv run attention_demo/demo.py
 import imageio.v3 as imageio
 import numpy as np
 from datasets import load_dataset
@@ -9,7 +9,9 @@ from tqdm import tqdm
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
 
-def visualize_attention_step(attention_weights_step, token_ids, processor):
+def visualize_attention_step(
+    attention_weights_step, token_ids, processor, start_phrase="The coded message is"
+):
     # attention_weights_step shape is [1, 16, seq_len, seq_len]
     # First squeeze out the batch dimension
     attention = attention_weights_step.squeeze(0)  # now [16, seq_len, seq_len]
@@ -35,50 +37,95 @@ def visualize_attention_step(attention_weights_step, token_ids, processor):
     else:
         scaled_weights = attention_weights_np
 
+    # Decode all tokens first
     tokens = processor.batch_decode(
         token_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False
     )
 
-    # Create a white image
-    img_width = 1200
-    img_height = 800
+    # Find the start index by looking for the start phrase
+    full_text = "".join(tokens)
+    start_idx = full_text.find(start_phrase)
+
+    # Convert character index to token index by counting tokens up to that point
+    token_start_idx = 0
+    char_count = 0
+    for i, token in enumerate(tokens):
+        char_count += len(token)
+        if char_count > start_idx:
+            token_start_idx = i
+            break
+
+    # Truncate tokens and weights to start from the found position
+    tokens = tokens[token_start_idx:]
+    scaled_weights = scaled_weights[token_start_idx:]
+
+    # Create a black image
+    img_width = 2500
+    img_height = 2500
     image = Image.new("RGB", (img_width, img_height), "white")
     draw = ImageDraw.Draw(image)
 
     # Try to load a monospace font, fallback to default if not available
     try:
         font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 14
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", 50
         )
     except:
         font = ImageFont.load_default()
 
     # Calculate text positions
-    x, y = 20, 20  # Starting position
-    max_width = img_width - 40  # Margin on both sides
-    line_height = 20
+    x, y = 40, 40
+    max_width = img_width - 80
+    line_height = 40
 
     for i, (token, weight) in enumerate(zip(tokens, scaled_weights)):
-        # Handle newlines in token
-        if "\\n" in token:
-            x = 20  # Reset x to start of line
-            y += line_height  # Move to next line
-            token = token.replace("\\n", "")  # Remove the newline for display
-            if not token:  # Skip empty tokens after removing newline
-                continue
+        # Handle newlines in token - check for both \n and {data}\n patterns
+        if "\n" in token or "\\n" in token:
+            # Split token into parts before and after newline
+            parts = token.replace("\\n", "\n").split("\n")
 
-        # Get text size for this token
+            for j, part in enumerate(parts):
+                if part:  # If there's content, render it
+                    bbox = draw.textbbox((x, y), part, font=font)
+                    text_width = bbox[2] - bbox[0]
+
+                    # Check if we need to start a new line
+                    if x + text_width > max_width:
+                        x = 40
+                        y += line_height
+
+                    # For the last token (current generation), use blue
+                    if i == len(tokens) - 1:
+                        color = (100, 150, 255)  # Light blue for current token
+                    else:
+                        # Create red to green gradient based on attention weight
+                        red = int(255 * (1 - weight))
+                        green = int(255 * weight)
+                        color = (red, green, 0)
+
+                    # Draw the part
+                    draw.text((x, y), part, fill=color, font=font)
+                    x += text_width + 4
+
+                # Move to next line if there are more parts or if this isn't the last empty part
+                if j < len(parts) - 1 or (j == len(parts) - 1 and not part):
+                    x = 40
+                    y += line_height
+
+            continue  # Skip the rest of the loop for this token
+
+        # Normal token handling (no newline)
         bbox = draw.textbbox((x, y), token, font=font)
         text_width = bbox[2] - bbox[0]
 
         # Check if we need to start a new line
         if x + text_width > max_width:
-            x = 20  # Reset x to start of line
+            x = 40  # Reset x to start of line
             y += line_height  # Move to next line
 
         # For the last token (current generation), use blue
         if i == len(tokens) - 1:
-            color = (0, 0, 255)  # Blue for current token
+            color = (100, 150, 255)  # Light blue for current token
         else:
             # Create red to green gradient based on attention weight
             red = int(255 * (1 - weight))
@@ -137,7 +184,7 @@ def combine_attention_videos(text_frames, image_frames):
         )
         image_frame_resized = np.array(image_frame_resized)
 
-        # Create a white canvas of target size
+        # white background
         canvas = np.full((target_height, target_width, 3), 255, dtype=np.uint8)
 
         # Place resized image in center of canvas
@@ -161,6 +208,7 @@ def create_attention_visualization(
     layer_idx=-1,
     fps=2,
     output_path="attention_visualization.mp4",
+    start_phrase="The coded message is",
 ):
     """
     Create a video visualization of attention weights during generation.
@@ -172,6 +220,7 @@ def create_attention_visualization(
         layer_idx: Index of attention layer to visualize (default: -1 for last layer)
         fps: Frames per second for output video (default: 2)
         output_path: Path to save the output video (default: "attention_visualization.mp4")
+        start_phrase: Phrase to start visualization from (default: "The coded message is")
     """
     num_steps = len(attention_weights)
     base_sequence = sequences.shape[1] - num_steps
@@ -185,7 +234,7 @@ def create_attention_visualization(
         ]  # get specified layer's attention
         current_tokens = sequences[0][: base_sequence + step]
         frame = visualize_attention_step(
-            attention_weights_step, current_tokens, processor
+            attention_weights_step, current_tokens, processor, start_phrase=start_phrase
         )
         frames.append(frame)
 
@@ -351,9 +400,7 @@ def create_image_attention_demo(
 
 
 if __name__ == "__main__":
-    checkpoint = (
-        "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words/checkpoint-2300"
-    )
+    checkpoint = "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words-and-sequences_official_demo/checkpoint-1850"
 
     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
         pretrained_model_name_or_path=checkpoint,
@@ -369,10 +416,36 @@ if __name__ == "__main__":
         padding_side="left",
     )
 
-    dataset = load_dataset("sunildkumar/message-decoding-words-r1")["train"]
+    dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences-r1")[
+        "train"
+    ]
 
-    examples = [ex for ex in dataset if ex["decoded_message"] == "SMART"]
-    example = examples[0]
+    # choose a random element of the dataset
+    example = dataset[np.random.randint(0, len(dataset))]
+
+    # inject our message in place of the original one
+    message = "groundlight loves ml"
+
+    # how to encode message - we need to reverse the mapping
+    mapping = example["mapping"]
+    reverse_mapping = {v: k for k, v in mapping.items()}
+
+    # add space
+    reverse_mapping[" "] = "_"
+
+    # encode the message
+    encoded_message = [reverse_mapping[char] for char in message]
+
+    # space it out
+    encoded_message = " ".join(encoded_message)
+
+    # inject it into the original example
+    instruction_text = example["messages"][1]["content"][-1]["text"]
+    base_text = instruction_text[: instruction_text.rindex(":") + 1]
+    example["messages"][1]["content"][-1]["text"] = f"{base_text} {encoded_message}."
+
+    example["decoded_message"] = message
+    example["coded_message"] = encoded_message
 
     messages = example["messages"]
     for message in messages:
@@ -399,11 +472,21 @@ if __name__ == "__main__":
     print("Starting generation")
     generated_output = model.generate(
         **inputs,
+        temperature=1.0,
         max_new_tokens=512,
         output_attentions=True,
         return_dict_in_generate=True,
     )
     print("Generation complete")
+
+    # print the generated text
+    print(
+        processor.decode(
+            generated_output.sequences[0],
+            skip_special_tokens=False,
+            clean_up_tokenization_spaces=False,
+        )
+    )
 
     # create visualizations for layer 20
     layer_idx = 20

@@ -5,7 +5,7 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import ModelConfig
 from vllm import LLM, SamplingParams
 
-from r1_vlm.environments.message_decoding_sentences_env.message_decoding_sentences_env import (
+from r1_vlm.environments.message_decoding_words_and_sequences_env.message_decoding_sequences_env import (
     MessageDecodingEnv,
 )
 
@@ -13,9 +13,10 @@ vf_env = MessageDecodingEnv()
 train_dataset, test_dataset = vf_env.get_dataset()
 rubric = vf_env.get_rubric()
 
-checkpoint = (
-    "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-sentences/checkpoint-820"
-)
+
+checkpoint = "/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words-and-sequences_official_demo/checkpoint-1850"
+
+
 model_config = ModelConfig(
     model_name_or_path=checkpoint,
     torch_dtype="bfloat16",
@@ -38,6 +39,7 @@ sampling_params = SamplingParams(
     max_tokens=512,
 )
 
+
 world_size_patch = patch("torch.distributed.get_world_size", return_value=1)
 profiling_patch = patch(
     "vllm.worker.worker.Worker._assert_memory_footprint_increased_during_profiling",
@@ -53,6 +55,8 @@ with world_size_patch, profiling_patch:
         limit_mm_per_prompt={"image": 1, "video": 0},
     )
 
+
+# 50 worked
 batch_size = 100
 # list of lists of examples
 batches = []
@@ -75,6 +79,7 @@ def extract_answer(generated_text):
 
 
 results = []
+
 
 for batch in tqdm(batches):
     conversations, texts, processed_batch, vllm_inputs = vf_env.prepare_data(
@@ -121,4 +126,4 @@ for task in task_counts.keys():
     print(f"{task}: {accuracy:.2f}, {results}")
 
 
-# CUDA_VISIBLE_DEVICES=0 uv run src/r1_vlm/environments/message_decoding_sentences_env/eval.py
+# CUDA_VISIBLE_DEVICES=0 uv run src/r1_vlm/environments/message_decoding_words_and_sequences_env/eval.py
