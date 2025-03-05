@@ -57,7 +57,7 @@ You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar
 Example image from the dataset:
 
 
-<img src="images/digits_example.png" alt="Example of digit recognition task" width="800"/>
+<img src="images/digits_example.png" alt="Example of digit recognition task" width="300"/>
 
 You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
