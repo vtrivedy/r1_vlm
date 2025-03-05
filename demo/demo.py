@@ -173,6 +173,16 @@ def encode_word(word, mapping):
 def validate_and_submit(word, mapping):
     # Check if input contains only letters
     if not word.replace(" ", "").isalpha():
+        gr.Warning("Invalid input! Please enter only English letters and spaces. No numbers or punctuation allowed.")
+        return (
+            gr.update(),  # word input
+            gr.update(),  # submit button
+            gr.update(interactive=False),  # run button - disable but keep visible
+            gr.update(visible=False)  # encoded word display
+        )
+
+    if not mapping:
+        gr.Warning("Please generate a decoder first")
         return (
             gr.update(),  # word input
             gr.update(),  # submit button
@@ -185,6 +195,15 @@ def validate_and_submit(word, mapping):
     
     # Only enable run button if we have a valid encoded word
     has_valid_encoded_word = bool(encoded_word.strip())
+    
+    if not has_valid_encoded_word:
+        gr.Warning("Invalid input! The word contains characters that cannot be encoded with the current decoder.")
+        return (
+            gr.update(),  # word input
+            gr.update(),  # submit button
+            gr.update(interactive=False),  # run button - disable but keep visible
+            gr.update(visible=False)  # encoded word display
+        )
     
     # Return updates for input, submit button, run button, and encoded word display
     return (
@@ -274,6 +293,7 @@ with gr.Blocks() as demo:
         max_lines=1,
         show_copy_button=False,
     )
+    gr.Markdown("Note: Only English letters and spaces are allowed. Please do not enter any numbers or punctuation.")
 
     # Add encoded word display
     encoded_word_display = gr.Textbox(
