@@ -1,6 +1,7 @@
 # r1_vlm
 Making it easy to train a VLM with GRPO. 
 
+Here's a demo of a model we trained to solve cryptograms. Try the model for yourself using our demo on HuggingFace: [TODO ADD LINK/BUTTON HERE]. Read more about this project here: [TODO ADD LINK TO BLOG POST HERE].
 https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 
 # Installation
@@ -25,22 +26,40 @@ cd r1_vlm
 uv sync
 ```
 
+# Task 1: Message Decoding
+We trained a VLM to solve cryptograms. A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must decode the message back to the original word. We put a reasonable amount of effort into the reward function design here, so it is worth checking that out if you're interested in our approach. Our model achieves 96% on our held out evaluation set. Try the demo on HuggingFace here: [TODO ADD LINK HERE]. See our blog post discussing technical details here: [TODO ADD LINK HERE].
+
+You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1).
+
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
+
+```bash
+# 4 GPU training with deepspeed
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_words_and_sequences_env/train.py
+
+# 2 GPU training without deepspeed, you'll need to adjust the number of generations in the train.py file.
+CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_and_sequences_env/train.py
+```
+
+Training results:
+![Correctness Reward](images/message_decoding_sequence_correctness_reward.png)
+
 
 # Task 1: Digit Recognition
-As proof that my code works, I trained Qwen2.5VL 3B on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either
-asked to return the list of digits in ascending order, or the sum of the digits.
+As proof that the code works, I trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
 
 You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
 
+Example image from the dataset:
 ![Example of digit recognition task](images/digits_example.png)
 
-You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. I've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and not using deepspeed.
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
 
 # 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digit_recognition_env/train.py
 
-# 2 GPU training, you'll need to adjust the number of generations in the train.py file.
+# 2 GPU training without deepspeed, you'll need to adjust the number of generations in the train.py file.
 CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/train.py
 ```
 
