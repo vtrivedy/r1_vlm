@@ -36,8 +36,26 @@ We put a reasonable amount of effort into the [reward function design](src/r1_vl
 
 You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1).
 
-You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 
+## Example Reasoning Trace:
+Here's an example where the message is `vision`.
+
+![Decoder Image](images/example_decoder_sequences.png)
+
+```
+I will decode each character one by one using the decoder:
+r → v
+h → i
+q → s
+h → i
+c → o
+t → n
+<chars> v i s i o n </chars>
+</think>
+<answer>vision</answer>
+```
+
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
 # 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_words_and_sequences_env/train.py
@@ -79,7 +97,7 @@ You can see the full dataset [here](https://huggingface.co/datasts/sunildkumar/m
 
 
 ## Example Reasoning Trace:
-Here's an example where the message is "VISION". 
+Here's an example where the message is `VISION`. 
 
 ![Decoder Image](images/example_decoder.webp)
 
@@ -112,7 +130,7 @@ Answer: VISION
 <answer>VISION</answer>
 ```
 
-You can train with:
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash 
 # 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_env/train.py
