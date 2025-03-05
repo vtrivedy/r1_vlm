@@ -1,3 +1,4 @@
+import spaces
 import random
 from threading import Thread
 
@@ -29,7 +30,7 @@ def get_eval_dataset():
 
 def load_model_and_tokenizer():
     model_config = ModelConfig(
-        model_name_or_path="/millcreek/home/sunil/r1_vlm/vlm-r1-message-decoding-words-and-sequences_official_demo/checkpoint-1850",
+        model_name_or_path="Groundlight/message-decoding-r1",
         torch_dtype="bfloat16",
         use_peft=False,
     )
@@ -203,6 +204,7 @@ def prepare_for_inference():
     )
 
 
+@spaces.GPU
 def run_inference(word, image, mapping):
     """Main inference function, now focused just on generation"""
     if not word or not image or not mapping:
@@ -330,6 +332,5 @@ with gr.Blocks() as demo:
         [run_button, loading_indicator, word_input, submit_button, encoded_word_display],
     )
 
-
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    demo.launch()
