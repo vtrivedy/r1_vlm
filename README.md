@@ -47,7 +47,7 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_a
 ```
 
 Training results:
-![Correctness Reward](images/message_decoding_sequence_correctness_reward.png)
+![Correctness Reward](images/message_decoding_sequences_correctness_reward.png)
 
 # Task 2: Digit Recognition
 As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
