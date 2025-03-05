@@ -14,7 +14,3 @@ Run the demo:
 CUDA_VISIBLE_DEVICES=0 gradio demo.py
 ```
 
-Deploy to Spaces: TODO
-```
-CUDA_VISIBLE_DEVICES=0 gradio demo.py --deploy
-```

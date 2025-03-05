@@ -395,5 +395,8 @@ with gr.Blocks() as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
-    # demo.launch()
+    # for local testing
+    # demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+
+    # updates HF
+    demo.launch()
