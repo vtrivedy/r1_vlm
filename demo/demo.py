@@ -280,7 +280,7 @@ with gr.Blocks() as demo:
     # Load resources when the app starts
     load_resources()
 
-    gr.Markdown("# Groundlight's VLM Reasoning Model - Cryptogram Decoder")
+    gr.Markdown("# Groundlight's Visual Reasoning Model - Cryptogram Decoder")
     current_mapping = gr.State()
     current_image = gr.State()
 
@@ -289,7 +289,7 @@ with gr.Blocks() as demo:
         with gr.Column(scale=1):
             # Instructions at the top
             instructions = """
-            Welcome! This demos Groundlight's VLM reasoning model trained to decode cryptograms. To use the model:
+            Welcome! This demos Groundlight's visual reasoning model trained to decode cryptograms. To use the model:
             1. Generate a decoder image. This will be provided to the model to decode your message.
             2. Enter your message in the text box below. Your message should only contain English letters and spaces. 
 
