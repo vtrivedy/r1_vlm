@@ -94,7 +94,7 @@ def prepare_model_input(image, mapping, processor, submitted_word):
     coded_message = " ".join(coded_message)
 
     instruction = (
-        f'Use the decoder in the image to decode this coded message: "{coded_message}". '
+        "Use the decoder in the image to decode a coded message."
         "The decoded message will be one or more words. Underscore characters "
         '("_") in the coded message should be mapped to a space (" ") when decoding.'
     )
@@ -104,8 +104,9 @@ def prepare_model_input(image, mapping, processor, submitted_word):
         "While thinking, you must include a section with the decoded characters using <chars></chars> tags. "
         "The <chars> section should include the decoded characters in the order they are decoded. It should include the "
         "underscore character wherever there is a space in the decoded message. For example, if the coded message is "
-        "a b c _ d e f, the <chars> section might be <chars> c a t _ d o g </chars>. Once you are done thinking, "
-        "provide your answer in the <answer> section, e.g. <answer> cat dog </answer>."
+        "a b c _ d e f, the chars section might be <chars> c a t _ d o g </chars>. You can think about the problem for "
+        "as long as you'd like. While thinking, you should robustly verify your solution. Once you are done thinking, "
+        f"provide your answer in the <answer> section, e.g. <answer> cat dog </answer>. The coded message is: {coded_message}."
     )
     instruction = f"{instruction} {ending}"
 
@@ -279,13 +280,35 @@ with gr.Blocks() as demo:
     # Load resources when the app starts
     load_resources()
 
-    gr.Markdown("# Message Decoding Demo")
+    gr.Markdown("# Groundlight's VLM Reasoning Model - Cryptogram Decoder")
     current_mapping = gr.State()
     current_image = gr.State()
 
     with gr.Row():
         # Left column - Inputs
         with gr.Column(scale=1):
+            # Instructions at the top
+            instructions = """
+            Welcome! This demos Groundlight's VLM reasoning model trained to decode cryptograms. To use the model:
+            1. Generate a decoder image. This will be provided to the model to decode your message.
+            2. Enter your message in the text box below. Your message should only contain English letters and spaces. 
+
+            Some examples:
+            • hello world
+            • i love reinforcement learning
+            • groundlight makes computer vision easy
+
+            3. Encode your message. Just click the "Encode Message" button, and we'll handle encoding for you.
+            4. Run the model. You will see the model's reasoning process and the decoded message in <answer></answer> tags.
+            """
+
+            gr.Textbox(
+                value=instructions,
+                label="Instructions",
+                interactive=False,
+                lines=4,
+            )
+
             # Image display component
             image_output = gr.Image(label="Decoder")
 
@@ -324,7 +347,7 @@ with gr.Blocks() as demo:
                 label="Model Output",
                 interactive=False,
                 lines=40,
-                max_lines=40,
+                max_lines=80,
                 container=True,
                 show_copy_button=True,
                 visible=True,
