@@ -43,6 +43,15 @@ Here's an example where the message is `vision`.
 ![Decoder Image](images/example_decoder_sequences.png)
 
 ```
+system
+You are a helpful assistant. You first think about the reasoning process in the mind and then provide the user with the answer.
+
+user
+Use the decoder in the image to decode a coded message.The decoded message will be one or more words. Underscore characters ("_") in the coded message should be mapped to a space (" ") when decoding. Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. While thinking, you must include a section with the decoded characters using <chars></chars> tags. The <chars> section should include the decoded characters in the order they are decoded. It should include the underscore character wherever there is a space in the decoded message. For example, if the coded message is a b c _ d e f, the chars section might be <chars> c a t _ d o g </chars>. You can think about the problem for as long as you'd like. While thinking, you should robustly verify your solution. Once you are done thinking, provide your answer in the <answer> section, e.g. <answer> cat dog </answer>. The coded message is: r h q h c t.
+
+assistant
+Let me solve this step by step.
+<think> 
 I will decode each character one by one using the decoder:
 r → v
 h → i
@@ -97,7 +106,7 @@ You can see the full dataset [here](https://huggingface.co/datasts/sunildkumar/m
 
 
 ## Example Reasoning Trace:
-Here's an example where the message is `VISION`. 
+Here's an example where the message is `VISION`. You can see this model learned to "repeat" itself to verify its solution while thinking. 
 
 ![Decoder Image](images/example_decoder.webp)
 
