@@ -48,7 +48,7 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_a
 
 Training results:
 
-<img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="300"/>
+<img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="600"/>
 
 # Task 2: Digit Recognition
 As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
@@ -71,7 +71,7 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/tr
 
 Training Results:
 
-<img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="300"/>
+<img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="600"/>
 
 # Task 3: Message Decoding - Single words
 A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated. 
@@ -123,4 +123,4 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/tra
 
 Training results:
 
-<img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="300"/>
+<img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="600"/>
