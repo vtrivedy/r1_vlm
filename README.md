@@ -1,7 +1,7 @@
 # r1_vlm
 Making it easy to train a VLM with GRPO. 
 
-![Message Decoding Demo](images/demo_video.mp4)
+https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 
 # Installation
 TODO: update this section once I port over the code to gl org.
