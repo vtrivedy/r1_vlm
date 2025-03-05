@@ -1,8 +1,8 @@
-import spaces
 import random
 from threading import Thread
 
 import gradio as gr
+import spaces
 import torch  # Need this for torch.no_grad()
 from datasets import load_dataset
 from qwen_vl_utils import process_vision_info
@@ -18,7 +18,9 @@ from trl import ModelConfig
 
 
 def get_eval_dataset():
-    full_dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences")["train"]
+    full_dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences")[
+        "train"
+    ]
     full_dataset = full_dataset.shuffle(seed=42)
 
     # split the dataset with the same seed as used in the training script
@@ -161,7 +163,7 @@ def encode_word(word, mapping):
     """
     if not word or not mapping:
         return ""
-        
+
     word = word.lower()
     # reverse the decoder to encode the word
     encoder = {v: k for k, v in mapping.items()}
@@ -173,12 +175,14 @@ def encode_word(word, mapping):
 def validate_and_submit(word, mapping):
     # Check if input contains only letters
     if not word.replace(" ", "").isalpha():
-        gr.Warning("Invalid input! Please enter only English letters and spaces. No numbers or punctuation allowed.")
+        gr.Warning(
+            "Invalid input! Please enter only English letters and spaces. No numbers or punctuation allowed."
+        )
         return (
             gr.update(),  # word input
             gr.update(),  # submit button
             gr.update(interactive=False),  # run button - disable but keep visible
-            gr.update(visible=False)  # encoded word display
+            gr.update(visible=False),  # encoded word display
         )
 
     if not mapping:
@@ -187,30 +191,36 @@ def validate_and_submit(word, mapping):
             gr.update(),  # word input
             gr.update(),  # submit button
             gr.update(interactive=False),  # run button - disable but keep visible
-            gr.update(visible=False)  # encoded word display
+            gr.update(visible=False),  # encoded word display
         )
 
     word = word.lower()
     encoded_word = encode_word(word, mapping)
-    
+
     # Only enable run button if we have a valid encoded word
     has_valid_encoded_word = bool(encoded_word.strip())
-    
+
     if not has_valid_encoded_word:
-        gr.Warning("Invalid input! The word contains characters that cannot be encoded with the current decoder.")
+        gr.Warning(
+            "Invalid input! The word contains characters that cannot be encoded with the current decoder."
+        )
         return (
             gr.update(),  # word input
             gr.update(),  # submit button
             gr.update(interactive=False),  # run button - disable but keep visible
-            gr.update(visible=False)  # encoded word display
+            gr.update(visible=False),  # encoded word display
         )
-    
+
     # Return updates for input, submit button, run button, and encoded word display
     return (
         gr.update(value=word, interactive=False, label="Submitted Word"),
         gr.update(interactive=False),  # Disable submit button
-        gr.update(interactive=has_valid_encoded_word),  # Enable run button only if valid, but always visible
-        gr.update(value=f"Encoded word: {encoded_word}", visible=has_valid_encoded_word)  # Show encoded word
+        gr.update(
+            interactive=has_valid_encoded_word
+        ),  # Enable run button only if valid, but always visible
+        gr.update(
+            value=f"Encoded word: {encoded_word}", visible=has_valid_encoded_word
+        ),  # Show encoded word
     )
 
 
@@ -277,11 +287,52 @@ with gr.Blocks() as demo:
     current_image = gr.State()
 
     with gr.Row():
-        # Image display component
-        image_output = gr.Image(label="Decoder")
+        # Left column - Inputs
+        with gr.Column(scale=1):
+            # Image display component
+            image_output = gr.Image(label="Decoder")
 
-    # Button to load new random example
-    next_button = gr.Button("Generate Random Decoder")
+            # Button to load new random example
+            next_button = gr.Button("Generate Random Decoder")
+
+            # Text input for the word
+            word_input = gr.Textbox(
+                label="Enter a single word",
+                placeholder="Enter word here...",
+                max_lines=1,
+                show_copy_button=False,
+            )
+
+            # Add encoded word display
+            encoded_word_display = gr.Textbox(
+                label="Encoded Word",
+                interactive=False,
+                visible=False,
+                max_lines=1,
+                show_copy_button=True,
+            )
+
+            # Group submit and run buttons vertically
+            with gr.Column():
+                submit_button = gr.Button("Submit Word")
+                run_button = gr.Button("Run Model", interactive=False)
+
+        # Right column - Outputs
+        with gr.Column(scale=1):
+            # Output area for model response
+            model_output = gr.Textbox(
+                label="Model Output",
+                interactive=False,
+                lines=40,
+                max_lines=40,
+                container=True,
+                show_copy_button=True,
+            )
+
+            # Add loading indicator
+            loading_indicator = gr.HTML(visible=False)
+
+    # Keep all the event handlers the same
     next_button.click(
         fn=show_random_example, outputs=[image_output, current_mapping, current_image]
     )
@@ -293,7 +344,9 @@ with gr.Blocks() as demo:
         max_lines=1,
         show_copy_button=False,
     )
-    gr.Markdown("Note: Only English letters and spaces are allowed. Please do not enter any numbers or punctuation.")
+    gr.Markdown(
+        "Note: Only English letters and spaces are allowed. Please do not enter any numbers or punctuation."
+    )
 
     # Add encoded word display
     encoded_word_display = gr.Textbox(
@@ -307,7 +360,9 @@ with gr.Blocks() as demo:
     # Group submit and run buttons vertically
     with gr.Column():  # Use Column instead of Row for vertical layout
         submit_button = gr.Button("Submit Word")
-        run_button = gr.Button("Run Model", interactive=False)  # Initialize as visible but disabled
+        run_button = gr.Button(
+            "Run Model", interactive=False
+        )  # Initialize as visible but disabled
 
     # Output area for model response
     model_output = gr.Textbox(
@@ -330,7 +385,6 @@ with gr.Blocks() as demo:
         outputs=[word_input, submit_button, run_button, encoded_word_display],
     )
 
-    # Run inference when run button is clicked
     run_button.click(
         fn=prepare_for_inference,
         outputs=[model_output, run_button, loading_indicator],
@@ -340,17 +394,23 @@ with gr.Blocks() as demo:
         outputs=model_output,
         api_name=False,
     ).then(
-        # Reset interface after generation
         lambda: (
-            gr.update(interactive=False),  # Disable run button but keep visible
-            gr.update(visible=False),  # Hide loading indicator
-            gr.update(interactive=True, label="Enter a single word"),  # Re-enable word input
-            gr.update(interactive=True),  # Re-enable submit button
-            gr.update(visible=False),  # Hide encoded word display
+            gr.update(interactive=False),
+            gr.update(visible=False),
+            gr.update(interactive=True, label="Enter a single word"),
+            gr.update(interactive=True),
+            gr.update(visible=False),
         ),
         None,
-        [run_button, loading_indicator, word_input, submit_button, encoded_word_display],
+        [
+            run_button,
+            loading_indicator,
+            word_input,
+            submit_button,
+            encoded_word_display,
+        ],
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    # demo.launch()
