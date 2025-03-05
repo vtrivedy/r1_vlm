@@ -55,6 +55,7 @@ As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition
 You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
 
 Example image from the dataset:
+
 ![Example of digit recognition task](images/digits_example.png)
 
 You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
