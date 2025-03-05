@@ -4,6 +4,8 @@ Making it easy to train a VLM with GRPO.
 Here's a demo of a model we trained to solve cryptograms. Try the model for yourself using our demo on HuggingFace: [TODO ADD LINK/BUTTON HERE]. Read more about this project here: [TODO ADD LINK TO BLOG POST HERE].
 
 https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
+In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model.  You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
+
 
 # Installation
 TODO: update this section once I port over the code to gl org.
