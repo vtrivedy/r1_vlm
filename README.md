@@ -2,6 +2,7 @@
 Making it easy to train a VLM with GRPO. 
 
 Here's a demo of a model we trained to solve cryptograms. Try the model for yourself using our demo on HuggingFace: [TODO ADD LINK/BUTTON HERE]. Read more about this project here: [TODO ADD LINK TO BLOG POST HERE].
+
 https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 
 # Installation
