@@ -302,6 +302,9 @@ with gr.Blocks() as demo:
                 max_lines=1,
                 show_copy_button=False,
             )
+            gr.Markdown(
+                "Note: Only English letters and spaces are allowed. Please do not enter any numbers or punctuation."
+            )
 
             # Add encoded word display
             encoded_word_display = gr.Textbox(
@@ -327,56 +330,16 @@ with gr.Blocks() as demo:
                 max_lines=40,
                 container=True,
                 show_copy_button=True,
+                visible=True,
             )
 
             # Add loading indicator
             loading_indicator = gr.HTML(visible=False)
 
-    # Keep all the event handlers the same
+    # Event handlers
     next_button.click(
         fn=show_random_example, outputs=[image_output, current_mapping, current_image]
     )
-
-    # Text input for the word
-    word_input = gr.Textbox(
-        label="Enter a single word",
-        placeholder="Enter word here...",
-        max_lines=1,
-        show_copy_button=False,
-    )
-    gr.Markdown(
-        "Note: Only English letters and spaces are allowed. Please do not enter any numbers or punctuation."
-    )
-
-    # Add encoded word display
-    encoded_word_display = gr.Textbox(
-        label="Encoded Word",
-        interactive=False,
-        visible=False,
-        max_lines=1,
-        show_copy_button=True,
-    )
-
-    # Group submit and run buttons vertically
-    with gr.Column():  # Use Column instead of Row for vertical layout
-        submit_button = gr.Button("Submit Word")
-        run_button = gr.Button(
-            "Run Model", interactive=False
-        )  # Initialize as visible but disabled
-
-    # Output area for model response
-    model_output = gr.Textbox(
-        label="Model Output",
-        interactive=False,
-        visible=False,
-        max_lines=10,
-        container=True,
-        show_copy_button=True,
-    )
-
-    # Add loading indicator
-    with gr.Row():
-        loading_indicator = gr.HTML(visible=False)
 
     # Validate word on submit and update interface
     submit_button.click(
