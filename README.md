@@ -47,6 +47,7 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_a
 ```
 
 Training results:
+
 <img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="300"/>
 
 # Task 2: Digit Recognition
@@ -68,7 +69,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/d
 CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/train.py
 ```
 
-Results:
+Training Results:
+
 <img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="300"/>
 
 # Task 3: Message Decoding - Single words
@@ -120,4 +122,5 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/tra
 ```
 
 Training results:
+
 <img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="300"/>
