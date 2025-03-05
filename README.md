@@ -1,13 +1,10 @@
 # r1_vlm
-Extending GRPO to VLMs. 
+Making it easy to train a VLM with GRPO. 
 
-# Idea
-This [blog post](https://www.philschmid.de/mini-deepseek-r1) shows how GRPO an LLM to do r1 style reasoning
-on a toy problem. As far as I know, no one has tried this on a VLM (at the time that I originally wrote this, some other people have been working on this as well now). My original idea was to prove one can use GRPO on a VLM as well and show it can improve performance on a toy task. 
-Now that I've achieved this, next I'm trying to extend this to more complex tasks. Currently, I'm working on integrating the `verifiers` library, which will unlock standard patterns for more complex model
-interactions, like multi-step reasoning, and tool use.
+![Message Decoding Demo](images/demo_video.mp4)
 
 # Installation
+TODO: update this section once I port over the code to gl org.
 This project relies on forks of some dependencies. First clone this repo. Then clone the following repos adjaces to this one. The two forks are installed as editable dependencies into `r1_vlm`. I don't have a stable branch for which branch on these forks to use, as I'm actively changing them. You can see the latest PRs in the relevant repos or leave an issue on this repo and I'll help you out. 
 ```
 1. git clone git@github.com:sunildkumar/r1_vlm.git
