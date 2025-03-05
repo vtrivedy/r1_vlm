@@ -13,9 +13,6 @@ from transformers import (
 )
 from trl import ModelConfig
 
-# run with:
-# CUDA_VISIBLE_DEVICES=0 uv run gradio demo/demo.py
-
 
 def get_eval_dataset():
     full_dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences")[
@@ -219,8 +216,8 @@ def validate_and_submit(word, mapping):
             interactive=has_valid_encoded_word
         ),  # Enable run button only if valid, but always visible
         gr.update(
-            value=f"Encoded word: {encoded_word}", visible=has_valid_encoded_word
-        ),  # Show encoded word
+            value=f"Encoded message: {encoded_word}", visible=has_valid_encoded_word
+        ),  # Show encoded message
     )
 
 
@@ -297,8 +294,8 @@ with gr.Blocks() as demo:
 
             # Text input for the word
             word_input = gr.Textbox(
-                label="Enter a single word",
-                placeholder="Enter word here...",
+                label="Enter your message",
+                placeholder="Enter message here...",
                 max_lines=1,
                 show_copy_button=False,
             )
@@ -308,7 +305,7 @@ with gr.Blocks() as demo:
 
             # Add encoded word display
             encoded_word_display = gr.Textbox(
-                label="Encoded Word",
+                label="Encoded Message",
                 interactive=False,
                 visible=False,
                 max_lines=1,
@@ -317,7 +314,7 @@ with gr.Blocks() as demo:
 
             # Group submit and run buttons vertically
             with gr.Column():
-                submit_button = gr.Button("Submit Word")
+                submit_button = gr.Button("Encode Message")
                 run_button = gr.Button("Run Model", interactive=False)
 
         # Right column - Outputs
@@ -360,7 +357,7 @@ with gr.Blocks() as demo:
         lambda: (
             gr.update(interactive=False),
             gr.update(visible=False),
-            gr.update(interactive=True, label="Enter a single word"),
+            gr.update(interactive=True, label="Enter your message"),
             gr.update(interactive=True),
             gr.update(visible=False),
         ),
