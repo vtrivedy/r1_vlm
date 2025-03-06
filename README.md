@@ -26,7 +26,7 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 
 
 <p align="center">
-<img src="images/demo.gif" alt="Demo GIF" width="800" />
+<img src="images/demo.webp" alt="Demo GIF" width="800" />
 </p>
 
 
@@ -58,9 +58,10 @@ uv pip install hatchling editables torch==2.5.1 && uv sync --no-build-isolation
 # Task 1: Message Decoding
 We trained `Qwen2.5VL-3B-Instruct` to solve short cryptograms. A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must recover the original message. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities - so it forces the model to use all of its capabilities. Our model achieves 96% accuracy on our eval set.
  
-Demo video: 
+<p align="center">
+<img src="images/demo2.webp" alt="Demo2 webp" width="800" />
+</p>
 
-https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 
 In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
 
