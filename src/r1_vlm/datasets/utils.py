@@ -47,14 +47,3 @@ def preprocess_r1_dataset(dataset: Dataset) -> Dataset:
     # thin wrapper, as I figure we'll need to do more preprocessing here eventually.
     transformed_dataset = inject_images_into_dataset(dataset)
     return transformed_dataset
-
-
-def test():
-    dataset = load_dataset("sunildkumar/message-decoding-words-and-sequences-r1-testing")["train"]
-    dataset = preprocess_r1_dataset(dataset)
-    
-    import pdb; pdb.set_trace()
-    print(dataset)
-
-if __name__ == "__main__":
-    test()
