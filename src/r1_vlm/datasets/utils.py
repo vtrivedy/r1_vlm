@@ -29,8 +29,6 @@ def inject_images_into_dataset(dataset: Dataset) -> Dataset:
             for message in messages:
                 content = message["content"]
                 [item.update({"image": image}) for item in content if item["type"] == "image" and item["image"] == IMAGE_PLACEHOLDER]
-
-        print("running")
         
         return examples
 

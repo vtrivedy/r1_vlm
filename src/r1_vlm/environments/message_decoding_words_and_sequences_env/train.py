@@ -13,10 +13,6 @@ os.environ["WANDB_PROJECT"] = "message-decoding-words-and-sequences"
 
 vf_env = MessageDecodingEnv()
 train_dataset, test_dataset = vf_env.get_dataset()
-
-print("DATASET EXAMPLE HERE")
-print(train_dataset[0])
-
 rubric = vf_env.get_rubric()
 
 # Flag that determines if gradient checkpointing is used. If it is, we need to set use_cache to False.

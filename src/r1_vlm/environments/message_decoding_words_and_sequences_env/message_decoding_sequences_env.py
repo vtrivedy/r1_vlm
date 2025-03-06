@@ -26,66 +26,14 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
     def get_dataset(self) -> tuple[Dataset, Dataset]:
         dataset = load_dataset(self.dataset_name)["train"]
-        
-        # Add an "id" column
-        dataset = dataset.map(lambda example, idx: {"id": idx}, with_indices=True)
-        
-        # Remove columns not needed for filtering
-        dataset_for_filter = dataset.remove_columns(["image"])
-        
-        # Filter on the trimmed dataset
-        print("starting filtering")
-        word_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word")
-        word_pair_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word_2")
-        word_triple_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word_3")
-        print("finished filtering")
 
-        # Re-select rows from the original dataset using the newly added "id" column
-        word_examples = dataset.select(word_examples_filtered["id"])
-        word_pair_examples = dataset.select(word_pair_examples_filtered["id"])
-        word_triple_examples = dataset.select(word_triple_examples_filtered["id"])
-
-        # split into train and test
-        word_examples = word_examples.train_test_split(test_size=0.2, seed=42)
-        word_examples_train = word_examples["train"]
-        word_examples_test = word_examples["test"]
-
-        word_pair_examples = word_pair_examples.train_test_split(test_size=0.2, seed=42)
-        word_pair_examples_train = word_pair_examples["train"]
-        word_pair_examples_test = word_pair_examples["test"]
-
-        word_triple_examples = word_triple_examples.train_test_split(
-            test_size=0.2, seed=42
-        )
-        word_triple_examples_train = word_triple_examples["train"]
-        word_triple_examples_test = word_triple_examples["test"]
-
-        # the test dataset is just the concatenation of the three test datasets
-        test_dataset = concatenate_datasets(
-            [word_examples_test, word_pair_examples_test, word_triple_examples_test]
-        )
-
-        # the train dataset is interleaved from the three tasks, sampling randomly
-        train_dataset_length = 100000
-        train_dataset = []
-        while len(train_dataset) < train_dataset_length:
-            word_idx = random.randint(0, len(word_examples_train) - 1)
-            word_example = word_examples_train[word_idx]
-            train_dataset.append(word_example)
-
-            word_pair_idx = random.randint(0, len(word_pair_examples_train) - 1)
-            word_pair_example = word_pair_examples_train[word_pair_idx]
-            train_dataset.append(word_pair_example)
-
-            word_triple_idx = random.randint(0, len(word_triple_examples_train) - 1)
-            word_triple_example = word_triple_examples_train[word_triple_idx]
-            train_dataset.append(word_triple_example)
-
-        train_dataset = Dataset.from_list(train_dataset)
-        
         # handle image injection
-        train_dataset = preprocess_r1_dataset(train_dataset)
-        test_dataset = preprocess_r1_dataset(test_dataset)
+        dataset = preprocess_r1_dataset(dataset)
+        
+        # split into train and test
+        splits = dataset.train_test_split(test_size=0.2, seed=42)
+        train_dataset = splits["train"]
+        test_dataset = splits["test"]
 
         return train_dataset, test_dataset
 
