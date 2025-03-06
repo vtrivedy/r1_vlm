@@ -17,10 +17,10 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 
 <p align="center">
   <a href="https://huggingface.co/spaces/Groundlight/grpo-vlm-decoder">
-    <img src="https://img.shields.io/badge/Try%20it-HuggingFace-blue?style=for-the-badge" alt="Try it on Hugging Face">
+    <img src="https://img.shields.io/badge/Try%20it-On%20HuggingFace-blue?style=for-the-badge" alt="Try it on Hugging Face">
   </a>
   <a href="https://www.groundlight.ai/blog/visual-reasoning-models">
-    <img src="https://img.shields.io/badge/Read%20More-Blog-orange?style=for-the-badge" alt="Read More">
+    <img src="https://img.shields.io/badge/Read%20More-Technical%20Blog-orange?style=for-the-badge" alt="Read More">
   </a>
 </p>
 
@@ -28,7 +28,6 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 <p align="center">
 <img src="images/demo.gif" alt="Demo GIF" width="800" />
 </p>
-
 
 
 # Installation
@@ -67,8 +66,11 @@ In this demo, you can see our model solve the cryptogram: `groundlight loves ml`
 
 We put a reasonable amount of effort into the [reward function design](src/r1_vlm/environments/message_decoding_words_and_sequences_env/message_decoding_sequences_env.py) to make this possible, so it is worth checking this out if you're interested in our approach.
 
-You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1).
-
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 ## Example Reasoning Trace:
 Here's an example where the message is `vision`.
@@ -113,7 +115,12 @@ Training results:
 # Task 2: Digit Recognition
 As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
 
-You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
+
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/digit-recognition-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 Example image from the dataset:
 
@@ -134,8 +141,13 @@ Training Results:
 <img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="600"/>
 
 # Task 3: Message Decoding - Single words
-A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated. 
-You can see the full dataset [here](https://huggingface.co/datasts/sunildkumar/message-decoding-words) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-r1).
+A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated.
+
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/message-decoding-words-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 
 ## Example Reasoning Trace:
