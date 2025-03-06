@@ -1,18 +1,45 @@
-# r1_vlm
-Extending GRPO to VLMs. 
+<p align="center">
+<img src="images/gl_logo.png">
+</p>
 
-# Idea
-This [blog post](https://www.philschmid.de/mini-deepseek-r1) shows how GRPO an LLM to do r1 style reasoning
-on a toy problem. As far as I know, no one has tried this on a VLM (at the time that I originally wrote this, some other people have been working on this as well now). My original idea was to prove one can use GRPO on a VLM as well and show it can improve performance on a toy task. 
-Now that I've achieved this, next I'm trying to extend this to more complex tasks. Currently, I'm working on integrating the `verifiers` library, which will unlock standard patterns for more complex model
-interactions, like multi-step reasoning, and tool use.
+
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+</p>
+
+
+This package makes it easy to train a VLM with GRPO. 
+
+We trained a small VLM to solve cryptograms. Use the buttons below to try the model using our demo on HuggingFace Spaces or read more about the technical details in our blog post.
+
+
+<p align="center">
+  <a href="https://huggingface.co/spaces/Groundlight/grpo-vlm-decoder">
+    <img src="https://img.shields.io/badge/Try%20it-HuggingFace-blue?style=for-the-badge" alt="Try it on Hugging Face">
+  </a>
+  <a href="https://www.groundlight.ai/blog/visual-reasoning-models">
+    <img src="https://img.shields.io/badge/Read%20More-Blog-orange?style=for-the-badge" alt="Read More">
+  </a>
+</p>
+
+
+<p align="center">
+<img src="images/demo.gif" alt="Demo GIF" width="800" />
+</p>
+
+
 
 # Installation
-This project relies on forks of some dependencies. First clone this repo. Then clone the following repos adjaces to this one. The two forks are installed as editable dependencies into `r1_vlm`. I don't have a stable branch for which branch on these forks to use, as I'm actively changing them. You can see the latest PRs in the relevant repos or leave an issue on this repo and I'll help you out. 
+This project relies on forks for some dependencies. First clone this repo. Then clone the following repos adjacent to this one. The two forks are installed as editable dependencies into `r1_vlm`. For each fork, we checkout the relevant release branch. This process will be improved in the future. Please leave a github issue and tag @sunildkumar if you run into any issues.
 ```
-1. git clone git@github.com:sunildkumar/r1_vlm.git
-2. git clone git@github.com:sunildkumar/trl.git # this is my fork of TRL with added support for VLMs, verifiers, and vllm.
-3. git clone git@github.com:sunildkumar/verifiers.git # this is my fork of the verifiers library, which updates the TRL dependency from HuggingFace's to my fork (above).
+# clone this repo
+1. git clone git@github.com:groundlight/r1_vlm.git
+
+# clone forks at a specific release
+2. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/trl.git
+3. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/verifiers.git  
 ```
 
 Afterwards, your directory structure should look like this:
@@ -22,41 +49,96 @@ trl/
 verifiers/
 ```
 
-Then install with `uv`:
+Then install with the `uv` package manager:
 ```
 cd r1_vlm
-uv sync
+uv pip install hatchling editables torch==2.5.1 && uv sync --no-build-isolation
 ```
 
+# Task 1: Message Decoding
+We trained `Qwen2.5VL-3B-Instruct` to solve short cryptograms. A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must recover the original message. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities - so it forces the model to use all of its capabilities. Our model achieves 96% accuracy on our eval set.
+ 
+Demo video: 
 
-# Task 1: Digit Recognition
-As proof that my code works, I trained Qwen2.5VL 3B on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either
-asked to return the list of digits in ascending order, or the sum of the digits.
+https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
+
+In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
+
+We put a reasonable amount of effort into the [reward function design](src/r1_vlm/environments/message_decoding_words_and_sequences_env/message_decoding_sequences_env.py) to make this possible, so it is worth checking this out if you're interested in our approach.
+
+You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1).
+
+
+## Example Reasoning Trace:
+Here's an example where the message is `vision`.
+
+![Decoder Image](images/example_decoder_sequences.png)
+
+```
+system
+You are a helpful assistant. You first think about the reasoning process in the mind and then provide the user with the answer.
+
+user
+Use the decoder in the image to decode a coded message.The decoded message will be one or more words. Underscore characters ("_") in the coded message should be mapped to a space (" ") when decoding. Show your work in <think> </think> tags and return the answer in <answer> </answer> tags. While thinking, you must include a section with the decoded characters using <chars></chars> tags. The <chars> section should include the decoded characters in the order they are decoded. It should include the underscore character wherever there is a space in the decoded message. For example, if the coded message is a b c _ d e f, the chars section might be <chars> c a t _ d o g </chars>. You can think about the problem for as long as you'd like. While thinking, you should robustly verify your solution. Once you are done thinking, provide your answer in the <answer> section, e.g. <answer> cat dog </answer>. The coded message is: r h q h c t.
+
+assistant
+Let me solve this step by step.
+<think> 
+I will decode each character one by one using the decoder:
+r → v
+h → i
+q → s
+h → i
+c → o
+t → n
+<chars> v i s i o n </chars>
+</think>
+<answer>vision</answer>
+```
+
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
+```bash
+# 4 GPU training with deepspeed
+CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_words_and_sequences_env/train.py
+
+# 2 GPU training without deepspeed, you'll need to adjust the number of generations in the train.py file.
+CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_and_sequences_env/train.py
+```
+
+Training results:
+
+<img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="600"/>
+
+# Task 2: Digit Recognition
+As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
 
 You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
 
-![Example of digit recognition task](images/digits_example.png)
+Example image from the dataset:
 
-You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. I've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and not using deepspeed.
+<img src="images/digits_example.png" alt="Example of digit recognition task" width="300"/>
+
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
 
 # 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digit_recognition_env/train.py
 
-# 2 GPU training, you'll need to adjust the number of generations in the train.py file.
+# 2 GPU training without deepspeed, you'll need to adjust the number of generations in the train.py file.
 CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/train.py
 ```
 
-Results:
-![Correctness Reward](images/digit_recognition_correctness_reward.png)
+Training Results:
 
-# Task 2: Message Decoding
-This task is more complex. We've created a dataset of "coded messages". Each message is a common english word. We define a coding/decoding mapping that we use to scramble the word, creating a coded message. We then provide the model with the coded message and the decoder image, and ask the model to decode the message back to the original word. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities (technically, for some words, there is a unique solution but it is unlikely that the model knows this). You can see the full dataset
-[here](https://huggingface.co/datasets/sunildkumar/message-decoding-words).
+<img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="600"/>
+
+# Task 3: Message Decoding - Single words
+A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated. 
+You can see the full dataset [here](https://huggingface.co/datasts/sunildkumar/message-decoding-words) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-r1).
 
 
 ## Example Reasoning Trace:
-Here's an example where the message is "VISION". 
+Here's an example where the message is `VISION`. You can see this model learned to "repeat" itself to verify its solution while thinking. 
 
 ![Decoder Image](images/example_decoder.webp)
 
@@ -89,7 +171,7 @@ Answer: VISION
 <answer>VISION</answer>
 ```
 
-You can train with:
+You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash 
 # 4 GPU training with deepspeed
 CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/message_decoding_env/train.py
@@ -99,20 +181,5 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/tra
 ```
 
 Training results:
-![Correctness Reward](images/message_decoding_correctness_reward.png)
 
-
-
-## Training:
-```
-# run from root of repo
-uv run accelerate launch --config_file train/multi_gpu.yaml  train/train.py
-
-uv run accelerate launch --config_file train/multi_gpu.yaml  train/train_counting.py
-
-CUDA_VISIBLE_DEVICES=1,2,3 uv run accelerate launch --config_file train/multi_gpu_3only.yaml  train/train_counting.py
-
-CUDA_VISIBLE_DEVICES=1 uv run train/train_counting.py
-
-
-```
+<img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="600"/>
