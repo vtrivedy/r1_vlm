@@ -74,8 +74,9 @@ We put a reasonable amount of effort into the [reward function design](src/r1_vl
 
 ## Example Reasoning Trace:
 Here's an example where the message is `vision`.
-
-![Decoder Image](images/example_decoder_sequences.png)
+<p align="center">
+<img src="images/example_decoder_sequences.png" alt="decoder image">
+</p>
 
 ```
 system
@@ -110,7 +111,9 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_a
 
 Training results:
 
+<p align="center">
 <img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="600"/>
+</p>
 
 # Task 2: Digit Recognition
 As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
@@ -124,7 +127,9 @@ As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition
 
 Example image from the dataset:
 
+<p align="center">
 <img src="images/digits_example.png" alt="Example of digit recognition task" width="300"/>
+</p>
 
 You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
@@ -138,7 +143,9 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/tr
 
 Training Results:
 
+<p align="center">
 <img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="600"/>
+</p>
 
 # Task 3: Message Decoding - Single words
 A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated.
@@ -153,7 +160,9 @@ A precursor to the message decoding task above. Only on single words. The reward
 ## Example Reasoning Trace:
 Here's an example where the message is `VISION`. You can see this model learned to "repeat" itself to verify its solution while thinking. 
 
-![Decoder Image](images/example_decoder.webp)
+<p align="center">
+<img src="images/example_decoder.webp" alt="Decoder Image">
+</p>
 
 ```
 system
@@ -195,4 +204,6 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/tra
 
 Training results:
 
+<p align="center">
 <img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="600"/>
+</p>
