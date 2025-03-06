@@ -35,11 +35,12 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 This project relies on forks for some dependencies. First clone this repo. Then clone the following repos adjacent to this one. The two forks are installed as editable dependencies into `r1_vlm`. For each fork, we checkout the relevant release branch. This process will be improved in the future. Please leave a github issue and tag @sunildkumar if you run into any issues.
 ```
 # clone this repo
-1. git clone git@github.com:groundlight/r1_vlm.git
+git clone git@github.com:groundlight/r1_vlm.git
 
 # clone forks at a specific release
-2. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/trl.git
-3. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/verifiers.git  
+git clone --branch release_2025_03_06 --single-branch git@github.com:groundlight/verifiers.git
+git clone --branch release_2025_03_06 --single-branch git@github.com:groundlight/trl.git
+
 ```
 
 Afterwards, your directory structure should look like this:
