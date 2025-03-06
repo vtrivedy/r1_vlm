@@ -1,13 +1,10 @@
 import os
 
-from datasets import Dataset, DatasetDict, Features, Image, Value, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import find_dotenv, load_dotenv
 from tqdm import tqdm
-
+from r1_vlm.datasets.utils import IMAGE_PLACEHOLDER
 load_dotenv(dotenv_path=find_dotenv())
-
-# this holds the images/ directory created by message_decoding_words_and_sequences.py
-base_image_path = "/millcreek/home/sunil/r1_vlm/src/r1_vlm/datasets/message_decoding_words_and_sequences"
 
 
 def generate_r1_messages(example):
@@ -15,7 +12,7 @@ def generate_r1_messages(example):
     decoded_message = example["decoded_message"]
     mapping = example["mapping"]
     task = example["task"]
-    file_path = os.path.join(base_image_path, example["file_path"])
+    image = example["image"]
 
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
@@ -50,7 +47,7 @@ def generate_r1_messages(example):
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": example["image"]},  # Use PIL Image directly
+                {"type": "image", "image": IMAGE_PLACEHOLDER},
                 {"type": "text", "text": instruction},
             ],
         },
@@ -68,6 +65,7 @@ def generate_r1_messages(example):
         "mapping": mapping,
         "decoded_message": decoded_message,  # No spaces here because we want the model to reply with the relevant english word(s).
         "task": task,
+        "image": image, 
     }
 
 
@@ -81,82 +79,21 @@ def create_r1_message_decoding_dataset():
         processed_example = generate_r1_messages(example)
         examples.append(processed_example)
 
-        # TODO: Remove this
-        if len(examples) > 100:
-            break
+    processed_dataset = Dataset.from_list(examples)
 
-    features = Features(
-        {
-            "messages": [
-                {
-                    "content": [
-                        {
-                            "image": Image(decode=True, id=None),
-                            "text": Value("string"),
-                            "type": Value("string"),
-                        }
-                    ],
-                    "role": Value("string"),
-                }
-            ],
-            "coded_message": Value("string"),
-            "mapping": {
-                "_": Value("string"),
-                "a": Value("string"),
-                "b": Value("string"),
-                "c": Value("string"),
-                "d": Value("string"),
-                "e": Value("string"),
-                "f": Value("string"),
-                "g": Value("string"),
-                "h": Value("string"),
-                "i": Value("string"),
-                "j": Value("string"),
-                "k": Value("string"),
-                "l": Value("string"),
-                "m": Value("string"),
-                "n": Value("string"),
-                "o": Value("string"),
-                "p": Value("string"),
-                "q": Value("string"),
-                "r": Value("string"),
-                "s": Value("string"),
-                "t": Value("string"),
-                "u": Value("string"),
-                "v": Value("string"),
-                "w": Value("string"),
-                "x": Value("string"),
-                "y": Value("string"),
-                "z": Value("string"),
-            },
-            "decoded_message": Value("string"),
-            "task": Value("string"),
-        }
-    )
-
-    processed_dataset = Dataset.from_list(examples, features=features)
     splits = processed_dataset.train_test_split(test_size=0.1, seed=42)
 
-    dataset_dict = DatasetDict(
-        {
-            "train": splits["train"],
-            "test": splits["test"],
-        }
-    )
+    dataset_dict = {
+        "train": splits["train"],
+        "test": splits["test"],
+    }
 
     r1_dataset = DatasetDict(dataset_dict)
     r1_dataset.push_to_hub(
-        "sunildkumar/message-decoding-words-and-sequences-r1",
+        "sunildkumar/message-decoding-words-and-sequences-r1-testing",
         token=os.getenv("HUGGINGFACE_HUB_TOKEN"),
     )
 
 
 if __name__ == "__main__":
     create_r1_message_decoding_dataset()
-
-    dataset = load_dataset(
-        "sunildkumar/message-decoding-words-and-sequences-r1", split="train"
-    )
-    import ipdb
-
-    ipdb.set_trace()
