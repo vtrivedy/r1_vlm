@@ -15,8 +15,7 @@ from r1_vlm.datasets.utils import preprocess_r1_dataset
 class MessageDecodingEnv(SimpleVisionEnv):
     def __init__(
         self,
-        # TODO: MOVE OFF TESTING DATASET - THIS IS SO I CAN TEST IMAGE INJECTION WITHOUT IMPACTING ACTUAL DATASET
-        dataset: str = "sunildkumar/message-decoding-words-and-sequences-r1-testing",
+        dataset: str = "sunildkumar/message-decoding-words-and-sequences-r1",
         system_prompt: str = "",
         **kwargs,  # passed to the superclass
     ):

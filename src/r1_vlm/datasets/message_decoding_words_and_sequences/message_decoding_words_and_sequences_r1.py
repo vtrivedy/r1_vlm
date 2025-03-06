@@ -90,7 +90,7 @@ def create_r1_message_decoding_dataset():
 
     r1_dataset = DatasetDict(dataset_dict)
     r1_dataset.push_to_hub(
-        "sunildkumar/message-decoding-words-and-sequences-r1-testing",
+        "sunildkumar/message-decoding-words-and-sequences-r1",
         token=os.getenv("HUGGINGFACE_HUB_TOKEN"),
     )
 
