@@ -31,14 +31,15 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 
 
 
-
 # Installation
-TODO: update this section once I port over the code to gl org.
-This project relies on forks of some dependencies. First clone this repo. Then clone the following repos adjaces to this one. The two forks are installed as editable dependencies into `r1_vlm`. I don't have a stable branch for which branch on these forks to use, as I'm actively changing them. You can see the latest PRs in the relevant repos or leave an issue on this repo and I'll help you out. 
+This project relies on forks for some dependencies. First clone this repo. Then clone the following repos adjacent to this one. The two forks are installed as editable dependencies into `r1_vlm`. For each fork, we checkout the relevant release branch. This process will be improved in the future. Please leave a github issue and tag @sunildkumar if you run into any issues.
 ```
-1. git clone git@github.com:sunildkumar/r1_vlm.git
-2. git clone git@github.com:sunildkumar/trl.git # this is my fork of TRL with added support for VLMs, verifiers, and vllm.
-3. git clone git@github.com:sunildkumar/verifiers.git # this is my fork of the verifiers library, which updates the TRL dependency from HuggingFace's to my fork (above).
+# clone this repo
+1. git clone git@github.com:groundlight/r1_vlm.git
+
+# clone forks at a specific release
+2. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/trl.git
+3. git clone -branch release_2025_03_06 --single-branch git@github.com:groundlight/verifiers.git  
 ```
 
 Afterwards, your directory structure should look like this:
@@ -48,10 +49,10 @@ trl/
 verifiers/
 ```
 
-Then install with `uv`:
+Then install with the `uv` package manager:
 ```
 cd r1_vlm
-uv sync
+uv pip install hatchling editables torch==2.5.1 && uv sync --no-build-isolation
 ```
 
 # Task 1: Message Decoding
