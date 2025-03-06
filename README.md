@@ -10,10 +10,9 @@
 </p>
 
 
-Making it easy to train a VLM with GRPO. 
+This package makes it easy to train a VLM with GRPO. 
 
-
-We trained a small VLM to solve cryptograms. Try the model for yourself using our demo on HuggingFace: [TODO ADD LINK/BUTTON HERE]. Read more about this project here: [TODO ADD LINK TO BLOG POST HERE].
+We trained a small VLM to solve cryptograms. Try the model for yourself using our demo on [HuggingFace Spaces](https://huggingface.co/spaces/Groundlight/grpo-vlm-decoder). Read more about the technical details in our [blog post](https://www.groundlight.ai/blog/visual-reasoning-models).
 
 <p align="center">
 <img src="images/demo.gif" alt="Demo GIF" width="800" />
