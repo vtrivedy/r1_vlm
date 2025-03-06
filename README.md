@@ -5,7 +5,7 @@ Here's a demo of a model we trained to solve cryptograms. Try the model for your
 
 https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 <p align="center">
-<img src="images/demo.gif" alt="Demo GIF" width="400" />
+<img src="images/demo.gif" alt="Demo GIF" width="800" />
 </p>
 
 In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
