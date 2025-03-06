@@ -17,18 +17,17 @@ We trained a small VLM to solve cryptograms. Use the buttons below to try the mo
 
 <p align="center">
   <a href="https://huggingface.co/spaces/Groundlight/grpo-vlm-decoder">
-    <img src="https://img.shields.io/badge/Try%20it-HuggingFace-blue?style=for-the-badge" alt="Try it on Hugging Face">
+    <img src="https://img.shields.io/badge/Try%20it-On%20HuggingFace-blue?style=for-the-badge" alt="Try it on Hugging Face">
   </a>
   <a href="https://www.groundlight.ai/blog/visual-reasoning-models">
-    <img src="https://img.shields.io/badge/Read%20More-Blog-orange?style=for-the-badge" alt="Read More">
+    <img src="https://img.shields.io/badge/Read%20More-Technical%20Blog-orange?style=for-the-badge" alt="Read More">
   </a>
 </p>
 
 
 <p align="center">
-<img src="images/demo.gif" alt="Demo GIF" width="800" />
+<img src="images/demo.webp" alt="Demo GIF" width="800" />
 </p>
-
 
 
 # Installation
@@ -59,21 +58,26 @@ uv pip install hatchling editables torch==2.5.1 && uv sync --no-build-isolation
 # Task 1: Message Decoding
 We trained `Qwen2.5VL-3B-Instruct` to solve short cryptograms. A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must recover the original message. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities - so it forces the model to use all of its capabilities. Our model achieves 96% accuracy on our eval set.
  
-Demo video: 
+<p align="center">
+<img src="images/demo2.webp" alt="Demo2 webp" width="800" />
+</p>
 
-https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
 
 In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
 
 We put a reasonable amount of effort into the [reward function design](src/r1_vlm/environments/message_decoding_words_and_sequences_env/message_decoding_sequences_env.py) to make this possible, so it is worth checking this out if you're interested in our approach.
 
-You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1).
-
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/message-decoding-words-and-sequences-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 ## Example Reasoning Trace:
 Here's an example where the message is `vision`.
-
-![Decoder Image](images/example_decoder_sequences.png)
+<p align="center">
+<img src="images/example_decoder_sequences.png" alt="decoder image">
+</p>
 
 ```
 system
@@ -108,16 +112,25 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_words_a
 
 Training results:
 
+<p align="center">
 <img src="images/message_decoding_sequences_correctness_reward.png" alt="Correctness Reward Message Decoding Sequences" width="600"/>
+</p>
 
 # Task 2: Digit Recognition
 As a proof of concept, we trained `Qwen2.5VL-3B-Instruct` on a digit recognition task derived from MNIST. In each image, there are one, two or three digits. For each image, the model is either asked to return the list of digits in ascending order, or the sum of the digits.
 
-You can see the "raw" dataset [here](https://huggingface.co/datasets/sunildkumar/digit-recognition) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/digit-recognition-r1).
+
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/digit-recognition-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 Example image from the dataset:
 
+<p align="center">
 <img src="images/digits_example.png" alt="Example of digit recognition task" width="300"/>
+</p>
 
 You can run training on 4 GPUs, 3 for training, one for completion generation with `vllm` using the following command. We've tested it on 4x A100 80GB GPUs. You can also get it running on two GPUs as well by tuning down the number of generations and running without `deepspeed`.
 ```bash
@@ -131,17 +144,26 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/digit_recognition_env/tr
 
 Training Results:
 
+<p align="center">
 <img src="images/digit_recognition_correctness_reward.png" alt="Digit Recognition Correctness Reward" width="600"/>
+</p>
 
 # Task 3: Message Decoding - Single words
-A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated. 
-You can see the full dataset [here](https://huggingface.co/datasts/sunildkumar/message-decoding-words) and then the R1 setup on top [here](https://huggingface.co/datasets/sunildkumar/message-decoding-words-r1).
+A precursor to the message decoding task above. Only on single words. The reward design is significantly less sophisticated.
+
+<p align="center">
+<a href="https://huggingface.co/datasets/sunildkumar/message-decoding-words-r1">
+    <img src="https://img.shields.io/badge/See%20Dataset-On%20HuggingFace-yellow?style=for-the-badge" alt="See Dataset">
+  </a>
+</p>
 
 
 ## Example Reasoning Trace:
 Here's an example where the message is `VISION`. You can see this model learned to "repeat" itself to verify its solution while thinking. 
 
-![Decoder Image](images/example_decoder.webp)
+<p align="center">
+<img src="images/example_decoder.webp" alt="Decoder Image">
+</p>
 
 ```
 system
@@ -183,4 +205,6 @@ CUDA_VISIBLE_DEVICES=0,1 uv run src/r1_vlm/environments/message_decoding_env/tra
 
 Training results:
 
+<p align="center">
 <img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="600"/>
+</p>
