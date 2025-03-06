@@ -49,7 +49,7 @@ trl/
 verifiers/
 ```
 
-Then install with the `uv` package manager:
+Then install with the `uv` package manager. See the [uv docs](https://docs.astral.sh/uv/) for instructions if you don't have `uv` installed.
 ```
 cd r1_vlm
 uv pip install hatchling editables torch==2.5.1 && uv sync --no-build-isolation
