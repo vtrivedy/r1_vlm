@@ -9,12 +9,14 @@ from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
 from r1_vlm.environments.simple_vision_env import SimpleVisionEnv
+from r1_vlm.datasets.utils import preprocess_r1_dataset
 
 
 class MessageDecodingEnv(SimpleVisionEnv):
     def __init__(
         self,
-        dataset: str = "sunildkumar/message-decoding-words-and-sequences-r1",
+        # TODO: MOVE OFF TESTING DATASET - THIS IS SO I CAN TEST IMAGE INJECTION WITHOUT IMPACTING ACTUAL DATASET
+        dataset: str = "sunildkumar/message-decoding-words-and-sequences-r1-testing",
         system_prompt: str = "",
         **kwargs,  # passed to the superclass
     ):
@@ -24,10 +26,24 @@ class MessageDecodingEnv(SimpleVisionEnv):
 
     def get_dataset(self) -> tuple[Dataset, Dataset]:
         dataset = load_dataset(self.dataset_name)["train"]
+        
+        # Add an "id" column
+        dataset = dataset.map(lambda example, idx: {"id": idx}, with_indices=True)
+        
+        # Remove columns not needed for filtering
+        dataset_for_filter = dataset.remove_columns(["image"])
+        
+        # Filter on the trimmed dataset
+        print("starting filtering")
+        word_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word")
+        word_pair_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word_2")
+        word_triple_examples_filtered = dataset_for_filter.filter(lambda x: x["task"] == "word_3")
+        print("finished filtering")
 
-        word_examples = dataset.filter(lambda x: x["task"] == "word")
-        word_pair_examples = dataset.filter(lambda x: x["task"] == "word_2")
-        word_triple_examples = dataset.filter(lambda x: x["task"] == "word_3")
+        # Re-select rows from the original dataset using the newly added "id" column
+        word_examples = dataset.select(word_examples_filtered["id"])
+        word_pair_examples = dataset.select(word_pair_examples_filtered["id"])
+        word_triple_examples = dataset.select(word_triple_examples_filtered["id"])
 
         # split into train and test
         word_examples = word_examples.train_test_split(test_size=0.2, seed=42)
@@ -66,6 +82,10 @@ class MessageDecodingEnv(SimpleVisionEnv):
             train_dataset.append(word_triple_example)
 
         train_dataset = Dataset.from_list(train_dataset)
+        
+        # handle image injection
+        train_dataset = preprocess_r1_dataset(train_dataset)
+        test_dataset = preprocess_r1_dataset(test_dataset)
 
         return train_dataset, test_dataset
 
