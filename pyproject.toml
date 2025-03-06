@@ -30,10 +30,11 @@ dependencies = [
     "vllm==0.7.3",
     "wandb>=0.19.5",
     "verifiers",
-    "flash-attn>=2.7.3",
+    "flash-attn==2.7.3",
     "spaces>=0.32.0",
     "imageio>=2.37.0",
     "levenshtein>=0.27.1",
+    "pillow>=11.1.0",
 ]
 
 [tool.hatch.metadata]

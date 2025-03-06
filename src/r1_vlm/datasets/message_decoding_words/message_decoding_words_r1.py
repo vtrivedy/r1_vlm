@@ -3,20 +3,15 @@ import os
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import find_dotenv, load_dotenv
 from tqdm import tqdm
-
+from r1_vlm.datasets.utils import IMAGE_PLACEHOLDER
 load_dotenv(dotenv_path=find_dotenv())
-
-# this holds the images/ directory created by message_decoding_words_dataset.py
-base_image_path = "/millcreek/home/sunil/r1_vlm/src/r1_vlm/datasets/message_decoding_words"
 
 
 def generate_r1_messages(example):
     coded_message = example["coded_message"]
     decoded_message = example["decoded_message"]
     mapping = example["mapping"]
-    file_path = os.path.join(base_image_path, example["file_path"])
-
-    assert os.path.exists(file_path), f"File does not exist: {file_path}"
+    image = example["image"]
 
     # add spaces between each character to prevent tokenization issues
     coded_message = " ".join(coded_message)
@@ -40,7 +35,7 @@ def generate_r1_messages(example):
         {
             "role": "user",
             "content": [
-                {"type": "image", "image": file_path},
+                {"type": "image", "image": IMAGE_PLACEHOLDER},
                 {"type": "text", "text": instruction},
             ],
         },
@@ -57,6 +52,7 @@ def generate_r1_messages(example):
         "coded_message": coded_message,
         "mapping": mapping,
         "decoded_message": decoded_message,  # No spaces here because we want the model to reply with the relevant english word.
+        "image": image,
     }
 
 

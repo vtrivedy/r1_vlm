@@ -9,6 +9,7 @@ from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
 from r1_vlm.environments.simple_vision_env import SimpleVisionEnv
+from r1_vlm.datasets.utils import preprocess_r1_dataset
 
 
 class MessageDecodingEnv(SimpleVisionEnv):
@@ -25,47 +26,13 @@ class MessageDecodingEnv(SimpleVisionEnv):
     def get_dataset(self) -> tuple[Dataset, Dataset]:
         dataset = load_dataset(self.dataset_name)["train"]
 
-        word_examples = dataset.filter(lambda x: x["task"] == "word")
-        word_pair_examples = dataset.filter(lambda x: x["task"] == "word_2")
-        word_triple_examples = dataset.filter(lambda x: x["task"] == "word_3")
-
+        # handle image injection
+        dataset = preprocess_r1_dataset(dataset)
+        
         # split into train and test
-        word_examples = word_examples.train_test_split(test_size=0.2, seed=42)
-        word_examples_train = word_examples["train"]
-        word_examples_test = word_examples["test"]
-
-        word_pair_examples = word_pair_examples.train_test_split(test_size=0.2, seed=42)
-        word_pair_examples_train = word_pair_examples["train"]
-        word_pair_examples_test = word_pair_examples["test"]
-
-        word_triple_examples = word_triple_examples.train_test_split(
-            test_size=0.2, seed=42
-        )
-        word_triple_examples_train = word_triple_examples["train"]
-        word_triple_examples_test = word_triple_examples["test"]
-
-        # the test dataset is just the concatenation of the three test datasets
-        test_dataset = concatenate_datasets(
-            [word_examples_test, word_pair_examples_test, word_triple_examples_test]
-        )
-
-        # the train dataset is interleaved from the three tasks, sampling randomly
-        train_dataset_length = 100000
-        train_dataset = []
-        while len(train_dataset) < train_dataset_length:
-            word_idx = random.randint(0, len(word_examples_train) - 1)
-            word_example = word_examples_train[word_idx]
-            train_dataset.append(word_example)
-
-            word_pair_idx = random.randint(0, len(word_pair_examples_train) - 1)
-            word_pair_example = word_pair_examples_train[word_pair_idx]
-            train_dataset.append(word_pair_example)
-
-            word_triple_idx = random.randint(0, len(word_triple_examples_train) - 1)
-            word_triple_example = word_triple_examples_train[word_triple_idx]
-            train_dataset.append(word_triple_example)
-
-        train_dataset = Dataset.from_list(train_dataset)
+        splits = dataset.train_test_split(test_size=0.2, seed=42)
+        train_dataset = splits["train"]
+        test_dataset = splits["test"]
 
         return train_dataset, test_dataset
 

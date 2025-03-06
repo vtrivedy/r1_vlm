@@ -47,9 +47,25 @@ class SimpleVisionEnv(SimpleEnv):
         self.logger.debug(
             f"Completion 0 IDs: {states[0]['completion_ids']} \nlen: {len(states[0]['completion_ids'])}"
         )
+
+        def clean_messages_for_logging(messages):
+            cleaned = []
+            for message in messages:
+                cleaned_message = message.copy()
+                if "content" in cleaned_message:
+                    cleaned_content = []
+                    for item in cleaned_message["content"]:
+                        cleaned_item = item.copy()
+                        if "image" in cleaned_item and cleaned_item["image"] is not None:
+                            cleaned_item["image"] = "<PIL.Image object>"
+                        cleaned_content.append(cleaned_item)
+                    cleaned_message["content"] = cleaned_content
+                cleaned.append(cleaned_message)
+            return cleaned
+
         self.logger.info(
             "Prompt 0:\n"
-            + json.dumps(states[0]["messages"][:-1], indent=4)
+            + json.dumps(clean_messages_for_logging(states[0]["messages"][:-1]), indent=4)
             + "\n\nCompletion 0:\n"
             + json.dumps(states[0]["messages"][-1], indent=4)
         )
