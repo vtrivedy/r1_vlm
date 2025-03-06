@@ -1,6 +1,16 @@
-# r1_vlm
+<p align="center">
+<img src="images/gl_logo.png">
+</p>
+
+
+<p style="text-align: center;">
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+</p>
+
+
 Making it easy to train a VLM with GRPO. 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
 We trained a small VLM to solve cryptograms. Try the model for yourself using our demo on HuggingFace: [TODO ADD LINK/BUTTON HERE]. Read more about this project here: [TODO ADD LINK TO BLOG POST HERE].
@@ -9,9 +19,6 @@ We trained a small VLM to solve cryptograms. Try the model for yourself using ou
 <img src="images/demo.gif" alt="Demo GIF" width="800" />
 </p>
 
-
-https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
-In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
 
 # Installation
 TODO: update this section once I port over the code to gl org.
@@ -36,7 +43,13 @@ uv sync
 ```
 
 # Task 1: Message Decoding
-We trained `Qwen2.5VL-3B-Instruct` to solve short cryptograms (up to 3 words). A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must decode the message back to the original word. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities - so it forces the model to use all of its capabilities.
+We trained `Qwen2.5VL-3B-Instruct` to solve short cryptograms. A cryptogram is a message that has been encoded using a substitution cipher. The model is given a coded message and a decoder image, and it must recover the original message. This task has the nice property that it is very difficult to solve without engaging with both text and image modalities - so it forces the model to use all of its capabilities.
+ 
+Demo video: 
+
+https://github.com/user-attachments/assets/8ca0d408-452a-4c24-ba54-7421cfed8b29
+
+In this demo, you can see our model solve the cryptogram: `groundlight loves ml`. We visualize the model's attention weights from an intermediate layer of the model. Red = low attention, green = high attention. You can see its attention to the image is relatively diffuse initially, and then becomes hyper focused on the relevant region of the decoder as it decodes each letter in sequence. In effect, the model has learned to “read” the relevant regions of the decoder as it needs them.
 
 We put a reasonable amount of effort into the [reward function design](src/r1_vlm/environments/message_decoding_words_and_sequences_env/message_decoding_sequences_env.py) to make this possible, so it is worth checking this out if you're interested in our approach. Our model achieves 96% on our held out evaluation set. Try our demo on HuggingFace here: [TODO ADD LINK HERE]. See our blog post discussing the technical details here: [TODO ADD LINK HERE].
 
