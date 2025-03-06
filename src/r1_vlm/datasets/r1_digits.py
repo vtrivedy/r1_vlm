@@ -3,17 +3,14 @@ import os
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import find_dotenv, load_dotenv
 from tqdm import tqdm
-
+from r1_vlm.datasets.utils import IMAGE_PLACEHOLDER
 load_dotenv(dotenv_path=find_dotenv())
 
 # generates the R1 messages for the digit recognition task
 
-base_image_path = "/millcreek/home/sunil/r1_vlm/counting-mnist"
-
-
 def generate_r1_messages(example, task):
     label = example["label"]
-    file_path = os.path.join(base_image_path, example['image_path'])
+    image = example["image"]
     
     total = sum(label)
     
@@ -36,7 +33,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": file_path},
+                    {"type": "image", "image": IMAGE_PLACEHOLDER},
                     {"type": "text", "text": instruction},
                 ],
             },
@@ -53,6 +50,7 @@ def generate_r1_messages(example, task):
             "task": task,
             "label": label,
             "total": total,
+            "image": image,
         }
     elif task == 'addition':
         instruction = "What is the sum of the digits in this image?"
@@ -74,7 +72,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": file_path},
+                    {"type": "image", "image": IMAGE_PLACEHOLDER},
                     {"type": "text", "text": instruction},
                 ],
             },
@@ -92,6 +90,7 @@ def generate_r1_messages(example, task):
             "task": task,
             "label": label,
             "total": total,
+            "image": image,
         }
         
     else:

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "r1-vlm"
 version = "0.1.0"
-description = "Add your description here"
+description = "GRPO for VLMs"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
@@ -30,10 +30,11 @@ dependencies = [
     "vllm==0.7.3",
     "wandb>=0.19.5",
     "verifiers",
-    "flash-attn>=2.7.3",
+    "flash-attn==2.7.3",
     "spaces>=0.32.0",
     "imageio>=2.37.0",
     "levenshtein>=0.27.1",
+    "pillow>=11.1.0",
 ]
 
 [tool.hatch.metadata]

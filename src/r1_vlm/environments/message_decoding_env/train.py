@@ -9,7 +9,7 @@ from r1_vlm.environments.message_decoding_env.message_decoding_env import (
 )
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
-os.environ["WANDB_PROJECT"] = "message-decoding-verifiers-integration"
+os.environ["WANDB_PROJECT"] = "message-decoding-single-words"
 
 vf_env = MessageDecodingEnv()
 dataset = vf_env.get_dataset()
@@ -48,7 +48,7 @@ processor = AutoProcessor.from_pretrained(
 
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
-    output_dir="vlm-r1-message-decoding-verifiers-integration",
+    output_dir="vlm-r1-message-decoding-single-words",
     learning_rate=1e-6,
     adam_beta2=0.98,
     lr_scheduler_type="cosine",
@@ -57,7 +57,6 @@ training_args = GRPOConfig(
     save_steps=20,
     save_total_limit=50,
     num_train_epochs=1,
-    # starting with 1 gpu and small number of completions
     per_device_train_batch_size=5,
     num_generations=15,
     gradient_accumulation_steps=4,

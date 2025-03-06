@@ -4,7 +4,7 @@ from typing import Any, List
 from datasets import Dataset, concatenate_datasets, load_dataset
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
-
+from r1_vlm.datasets.utils import preprocess_r1_dataset
 from r1_vlm.environments.simple_vision_env import SimpleVisionEnv
 
 
@@ -29,6 +29,9 @@ class DigitRecognitionEnv(SimpleVisionEnv):
 
         # concatenate the three splits
         dataset = concatenate_datasets([digits_1, digits_2, digits_3])
+
+        # handle image injection
+        dataset = preprocess_r1_dataset(dataset)
 
         return dataset
 

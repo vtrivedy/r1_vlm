@@ -9,7 +9,7 @@ from r1_vlm.environments.digit_recognition_env.digit_recognition_env import (
 )
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
-os.environ["WANDB_PROJECT"] = "digit-recognition-verifiers-integration"
+os.environ["WANDB_PROJECT"] = "digit-recognition"
 
 
 vf_env = DigitRecognitionEnv()
@@ -48,7 +48,7 @@ processor = AutoProcessor.from_pretrained(
 
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
-    output_dir="vlm-r1-digit-recognition-verifiers-integration",
+    output_dir="vlm-r1-digit-recognition",
     learning_rate=1e-6,
     adam_beta2=0.98,
     lr_scheduler_type="cosine",
@@ -74,7 +74,7 @@ training_args = GRPOConfig(
     use_vllm=True,
     vllm_gpu_memory_utilization=0.2,
     report_to="wandb",
-    vllm_device="cuda:1",
+    vllm_device="cuda:3",
 )
 
 
