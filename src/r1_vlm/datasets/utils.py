@@ -31,42 +31,16 @@ def inject_images_into_dataset(dataset: Dataset) -> Dataset:
 
     return dataset.with_transform(_inject_images)
 
-def test_image_injection():
-    """
-    Tests the image injection functionality using the message decoding dataset.
-    """
-    from datasets import load_dataset
-    
-    # Load a small subset of the dataset for testing
-    dataset = load_dataset(
-        "sunildkumar/message-decoding-words-and-sequences-r1-testing",
-        split="train[:5]"
-    )
-    
-    # Get an example before transformation
-    example_before = dataset[0]
-    has_placeholder = any(
-        item["type"] == "image" and item["image"] == IMAGE_PLACEHOLDER
-        for message in example_before["messages"]
-        for item in message["content"]
-    )
-    assert has_placeholder, "Test data should contain IMAGE_PLACEHOLDER"
-    
-    # Apply the transformation
-    transformed_dataset = inject_images_into_dataset(dataset)
-    
-    # Verify transformation
-    example_after = transformed_dataset[0]
-    no_placeholder = all(
-        not (item["type"] == "image" and item["image"] == IMAGE_PLACEHOLDER)
-        for message in example_after["messages"]
-        for item in message["content"]
-    )
-    assert no_placeholder, "IMAGE_PLACEHOLDER should be replaced"
-    
-    print("Image injection test passed successfully!")
-    
-    import ipdb; ipdb.set_trace()
 
-if __name__ == "__main__":
-    test_image_injection()
+def preprocess_r1_dataset(dataset: Dataset) -> Dataset:
+    """
+    Args:
+        dataset: A HuggingFace dataset containing 'messages' and 'image' columns created by r1_vlm.datasets 
+    Returns:
+        A new dataset with the image injection transform applied. 
+    
+    """
+    
+    # thin wrapper, as I figure we'll need to do more preprocessing here eventually.
+    transformed_dataset = inject_images_into_dataset(dataset)
+    return transformed_dataset
