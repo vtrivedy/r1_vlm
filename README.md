@@ -244,4 +244,9 @@ uv sync --no-build-isolation
 
 ## Running in Docker
 
-If you want to give up on a local installation, try docker as described [in this issue](https://github.com/groundlight/r1_vlm/issues/27#issuecomment-2713115308).
+If you want to give up on a local installation, the supplied `Dockerfile` should work reliably.  Assuming of course you have all the nvidia-docker stuff sorted out, which is its own can of worms.
+
+```
+docker build -t r1_vlm .
+docker run -it --gpus all r1_vlm
+```
