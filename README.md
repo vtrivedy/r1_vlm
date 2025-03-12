@@ -208,3 +208,7 @@ Training results:
 <p align="center">
 <img src="images/message_decoding_correctness_reward.png" alt="Message Decoding Single Word Correctness Reward" width="600"/>
 </p>
+
+
+# Acknowledgements
+- We thank @willccbb for his work on the `verifiers` [package](https://github.com/willccbb/verifiers). We loved his "environment" abstraction and take advantage of it in this project.
