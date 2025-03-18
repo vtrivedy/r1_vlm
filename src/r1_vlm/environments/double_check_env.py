@@ -21,6 +21,7 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
             mask_env_response: If True, the environment response will be masked when computing loss. Essentially, the environment response will not be considered part of the completion. 
             max_workers: The max number of workers used for the `update_state` step.
         """
+        
 
         super().__init__(sampling_args=sampling_args, mask_env_response=mask_env_response, max_workers=max_workers)
         
