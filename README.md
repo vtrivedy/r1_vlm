@@ -250,3 +250,6 @@ If you want to give up on a local installation, the supplied `Dockerfile` should
 docker build -t r1_vlm .
 docker run -it --gpus all r1_vlm
 ```
+
+# Acknowledgements
+- We thank @willccbb for his work on the `verifiers` [package](https://github.com/willccbb/verifiers). We loved his "environment" abstraction and take advantage of it in this project.
