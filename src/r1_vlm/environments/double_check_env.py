@@ -28,14 +28,15 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         self.dataset_name = dataset_name
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
-        raise NotImplementedError("DoubleCheckVisionEnv requires a rubric for your task.")
+        raise NotImplementedError("DoubleCheckVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
     def get_dataset(self, **kwargs: Any) -> Dataset | None:
-        raise NotImplementedError("DoubleCheckVisionEnv requires a dataset for your task.")
+        raise NotImplementedError("DoubleCheckVisionEnv requires a dataset for your task. Expected to be implemented by subclass.")
     
     def is_completed(self, messages: List[Dict[str, Any]], **kwargs: Any) -> bool:
         """
         Checks if the conversation is completed. In this case, it's completed once the user asks "Are you sure?" and then model responds. 
         """
+        raise NotImplementedError("TODO: DoubleCheckVisionEnv needs to be written .")
        
     
     def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> Dict[str, Any]:
@@ -43,5 +44,4 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         Returns the environment response, which is simply asking the model
         if it's sure of its answer.
         """
-        # For a text-only response
         return {'role': 'user', 'content': 'Are you sure?'}
