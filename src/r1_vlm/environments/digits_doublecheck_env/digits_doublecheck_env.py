@@ -3,6 +3,7 @@ from statistics import mean
 from typing import Any, List
 
 from datasets import Dataset, concatenate_datasets, load_dataset
+from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
 
@@ -15,10 +16,12 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
         self,
         dataset_name: str = "sunildkumar/digit-recognition-r1",
         mask_env_response: bool = True,
+        processing_class: AutoProcessor = None,
     ):
         super().__init__(
             dataset_name=dataset_name,
             mask_env_response=mask_env_response,
+            processing_class=processing_class,
         )
         
         self.parser = XMLParser(fields=["think", "answer"])

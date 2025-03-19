@@ -1,18 +1,21 @@
 from typing import Any, Dict, List
 
 from datasets import Dataset
+from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 
 from .multistep_vision_env import MultistepVisionEnv
 
-ENV_MESSAGE = "Are you sure?"
+ENV_MESSAGE = {'role': 'user', 'content': [{"text": "Are you sure?", "type": "text"}]}
 
 class DoubleCheckVisionEnv(MultistepVisionEnv):
     def __init__(self, 
                  dataset_name: str,
                  sampling_args: dict[str, Any] = {},
                  mask_env_response: bool = True,
-                 max_workers: int = 10):
+                 max_workers: int = 10,
+                 processing_class: AutoProcessor = None):
+        
         """
         A simple multistep vision environment that asks the model if it's sure of its answer.
         
@@ -23,8 +26,7 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
             max_workers: The max number of workers used for the `update_state` step.
         """
         
-
-        super().__init__(sampling_args=sampling_args, mask_env_response=mask_env_response, max_workers=max_workers)
+        super().__init__(sampling_args=sampling_args, mask_env_response=mask_env_response, max_workers=max_workers, processing_class=processing_class)
         
         self.dataset_name = dataset_name
 
@@ -37,7 +39,7 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         """
         Checks if the conversation is completed. In this case, it's completed once the user asks "Are you sure?" and then model responds. 
         """
-        return len(messages) > 1 and messages[-2]['content'] == ENV_MESSAGE
+        return len(messages) > 1 and messages[-2] == ENV_MESSAGE
         
        
     def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> Dict[str, Any]:
@@ -45,4 +47,4 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         Returns the environment response, which is simply asking the model
         if it's sure of its answer.
         """
-        return {'role': 'user', 'content': ENV_MESSAGE}
+        return ENV_MESSAGE
