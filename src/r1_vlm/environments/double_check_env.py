@@ -5,6 +5,7 @@ from trl.trainer.grpo_trainer import RewardFunc
 
 from .multistep_vision_env import MultistepVisionEnv
 
+ENV_MESSAGE = "Are you sure?"
 
 class DoubleCheckVisionEnv(MultistepVisionEnv):
     def __init__(self, 
@@ -36,12 +37,12 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         """
         Checks if the conversation is completed. In this case, it's completed once the user asks "Are you sure?" and then model responds. 
         """
-        raise NotImplementedError("TODO: DoubleCheckVisionEnv needs to be written .")
+        return len(messages) > 1 and messages[-2]['content'] == ENV_MESSAGE
+        
        
-    
     def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> Dict[str, Any]:
         """
         Returns the environment response, which is simply asking the model
         if it's sure of its answer.
         """
-        return {'role': 'user', 'content': 'Are you sure?'}
+        return {'role': 'user', 'content': ENV_MESSAGE}
