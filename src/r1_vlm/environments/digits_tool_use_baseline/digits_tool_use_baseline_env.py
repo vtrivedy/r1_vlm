@@ -18,7 +18,7 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
     def __init__(
         self,
         processing_class: AutoProcessor,
-        dataset_name: str = "sunildkumar/digit-recognition-r1",
+        dataset_name: str = "sunildkumar/digit-recognition-tool-use-baseline-r1",
         # tool that directly gets the answer from the dataset
         tools: list[Callable] = [get_answer],
         max_steps: int = 10,
@@ -50,11 +50,6 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
         # handle image injection
         dataset = preprocess_r1_dataset(dataset)
         
-       
-        
-        import ipdb
-        ipdb.set_trace()
-        
         return dataset
     
     def get_rubric(self) -> list[RewardFunc]:
@@ -71,9 +66,3 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
 
         return [placeholder_reward_func]
     
-if __name__ == "__main__":
-    env = DigitsToolUseBaselineEnv(
-        processing_class=None,
-    )
-    
-    dataset = env.get_dataset()

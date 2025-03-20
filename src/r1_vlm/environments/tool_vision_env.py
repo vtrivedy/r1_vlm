@@ -139,6 +139,8 @@ class ToolVisionEnv(MultistepVisionEnv):
     
     def call_tool(self, tool_json: str, **kwargs: Any) -> str:
         """Call a tool based on JSON command."""
+        
+        print("INSIDE CALL TOOL")
         try:
             command = json.loads(tool_json)
             if not isinstance(command, dict):
@@ -165,23 +167,34 @@ class ToolVisionEnv(MultistepVisionEnv):
     def env_response(self, messages: List[Dict[str, str]], **kwargs: Any) -> list[dict[str, Any]]:
         # TODO: How to inject the input example into the tool call/data we need to cheat?
         try:
-            message_to_parse = messages[-1]["content"]
-            if message_to_parse["role"] != "assistant" or message_to_parse["type"] != "text":
-                raise ValueError(f"Expected last message to be an assistant message and text content: {message_to_parse=}")
-            
+            last_message = messages[-1]
+            # the last message should be an assistant message with text content
+            if last_message["role"] != "assistant" or last_message["content"][0]["type"] != "text":
+                print(f"Expected last message to be an assistant message and text content: {last_message=}")
+                raise ValueError("Expected last message to be an assistant message and text content")
+
+            # extract the text content from the last message
+            message_to_parse = last_message["content"][0]["text"]
             parsed = self.llm_parser.parse(message_to_parse)
+
             
             # Check if we got a valid tool field (not just None from failed parsing)
             if hasattr(parsed, 'tool') and parsed.tool is not None:
                 result = self.call_tool(parsed.tool)
                 if len(result.strip()) > 0:
-                    return [{"role": "user", "content": self.env_parser.format(result=result), "type": "text"}]
+                    result = self.env_parser.format(result=result)
+    
+                    
+                    return [{"role": "user", "content": [{"text": self.env_parser.format(result=result), "type": "text"}]}]
                 else:
-                    return [{"role": "user", "content": "Error: Tool execution returned empty output.", "type": "text"}]
+                    return [{"role": "user", "content": [{"text": "Error: Tool execution returned empty output.", "type": "text"}]}]
+            elif hasattr(parsed, "answer") and parsed.answer is not None:
+                return [{"role": "user", "content": [{"text": parsed.answer, "type": "text"}]}]
             else:
-                return [{"role": "user", "content": parsed.answer, "type": "text"}]
+                return [{"role": "user", "content": [{"text": "Error: No tool call or answer found in your last message.", "type": "text"}]}]
+                
         except Exception as e:
-            return [{"role": "user", "content": str(e), "type": "text"}]
+            return [{"role": "user", "content": [{"text":"Error when trying to respond to your last message: "+str(e), "type": "text"}]}]
         
         
     def _get_step_count(self, messages: List[Dict[str, Any]]) -> int:
@@ -206,7 +219,7 @@ class ToolVisionEnv(MultistepVisionEnv):
         if step_count >= self.max_steps:
             return True
         
-        parsed = self.llm_parser.parse(messages[-1]["content"])
+        parsed = self.llm_parser.parse(messages[-1]["content"][0]["text"])
         return hasattr(parsed, 'answer') and parsed.answer is not None
     
     

@@ -17,12 +17,12 @@ def get_answer(task: str, **kwargs) -> str:
         
 
     Examples:
-        {"name": "get_answer", "args": {"task": "recognition"}}
-        {"name": "get_answer", "args": {"task": "addition"}}
+        <tool>{"name": "get_answer", "args": {"task": "recognition"}}</tool> 
+        <tool>{"name": "get_answer", "args": {"task": "addition"}}</tool>
     '''
     
     # NOTE: The tool cheats (purposely)! It's not a "serious" tool, but rather a proof of concept to verify tool calling works properly. 
-        
+    print("TOOL CALLED")
     valid_tasks = ["recognition", "addition"]
     if task not in valid_tasks:
         raise ValueError(f" Error: Invalid task: {task}. Valid tasks are: {valid_tasks}")
