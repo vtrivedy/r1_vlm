@@ -6,7 +6,6 @@ from trl.trainer.grpo_trainer import RewardFunc
 
 from .multistep_vision_env import MultistepVisionEnv
 
-ENV_MESSAGE = {'role': 'user', 'content': [{"text": "Are you sure? Please double check your work.", "type": "text"}]}
 
 class DoubleCheckVisionEnv(MultistepVisionEnv):
     def __init__(self, 
@@ -26,6 +25,8 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         """
         
         super().__init__(sampling_args=sampling_args, mask_env_response=mask_env_response, max_workers=max_workers, processing_class=processing_class)
+        
+        self.ENV_MESSAGE = {'role': 'user', 'content': [{"text": "Are you sure? Please double check your work.", "type": "text"}]}
 
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
@@ -40,14 +41,17 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         """
         # Need to check if we've gone through the pattern: ENV_MESSAGE followed by two assistant responses - the bootstrap and the actual response. 
         return (len(messages) > 2 and 
-                messages[-3] == ENV_MESSAGE and 
+                messages[-3] == self.ENV_MESSAGE and 
                 messages[-2]["role"] == "assistant")
         
     def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> List[Dict[str, Any]]:
         """
         Returns the environment response and a bootstrap assistant message.
         """
+        
+        # TODO: I think we are masking the bootstrap message here, in addition to the actual env response.
         return [
-            ENV_MESSAGE,
-            {'role': 'assistant', 'content': [{"text": "<think> ", "type": "text"}]}
+            self.ENV_MESSAGE,
+            {'role': 'assistant', 'content': [{"text": "Let me re-examine this step by step.\n", "type": "text"}]}
         ]
+        

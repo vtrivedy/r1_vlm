@@ -42,7 +42,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": "Let me solve this step by step.\n<think>"}
+                    {"type": "text", "text": "Let me solve this step by step.\n"}
                 ],
             },
         ]

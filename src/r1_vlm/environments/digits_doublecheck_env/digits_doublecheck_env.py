@@ -41,12 +41,77 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
 
         return dataset
     
+    def preprocess_messages(self, prompts_messages: list[list[dict[str, Any]]], completions_messages: list[list[dict[str, Any]]]) -> list[list[dict[str, Any]]]:
+        '''
+        1. Combines prompts and completion messages into full conversations
+        2. Removes all messages before the first assistant message, leaving only the completion
+        3. Merges elements of the completion that come from the same source and are text only
+        
+        Args:
+            prompts: list of prompt conversations
+            completions_messages: list of completion conversations
+            
+        Returns:
+            list of preprocessed completion conversations
+        '''    
+        # Combine prompts and completions into full conversations
+        combined_messages = []
+        for prompt_msgs, completion_msgs in zip(prompts_messages, completions_messages):
+            conversation = []
+            conversation.extend(prompt_msgs)
+            conversation.extend(completion_msgs)
+            combined_messages.append(conversation)
+        
+        filtered_messages = []
+        for completion in combined_messages:
+            # find the index of the first assistant message
+            assistant_message_index = next((i for i, message in enumerate(completion) if message["role"] == "assistant"), None)
+            
+            if assistant_message_index is not None:
+                # keep only messages from the first assistant message onwards
+                filtered_messages.append(completion[assistant_message_index:])
+        
+        merged_completions = []
+        
+        for completion in filtered_messages:
+            merged_completion = []
+            current_message = None
+            
+            for message in completion:
+                # If message has non-text content, add it as is
+                if any(item["type"] != "text" for item in message["content"]):
+                    if current_message:
+                        merged_completion.append(current_message)
+                        current_message = None
+                    merged_completion.append(message)
+                    continue
+                    
+                # For text messages
+                if current_message and current_message["role"] == message["role"]:
+                    # Merge text content
+                    current_text = current_message["content"][0]["text"]
+                    new_text = message["content"][0]["text"]
+                    current_message["content"][0]["text"] = current_text + new_text
+                else:
+                    if current_message:
+                        merged_completion.append(current_message)
+                    current_message = {
+                        "role": message["role"],
+                        "content": [{"type": "text", "text": message["content"][0]["text"]}]
+                    }
+            
+            if current_message:
+                merged_completion.append(current_message)
+            merged_completions.append(merged_completion)
+        
+        return merged_completions
+    
     def get_rubric(self, **kwargs: Any) -> list[RewardFunc]:
         '''
         The correctness rewards only apply to the last message in the completion, not the intermediate completion message from the model.
         '''
         
-        def _recognition_correctness_reward_func(completions, **kwargs) -> list[float]:
+        def _recognition_correctness_reward_func(completion_conversations, **kwargs) -> list[float]:
                 """Reward function for recognition task"""
 
                 # verify that the task is recognition for all instances. If it isn't assumptions downstream fail
@@ -59,15 +124,14 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
 
                 # parse the last message in each completion (completions are conversations) for data between <answer> and </answer> tags
                 # only selects the data between the first answer tags in the message if there are multiple valid answer sets in it.
-                # TODO: verify this is actually only looking at the last message in the completion. 
-                responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
+                responses = [self.parser.parse(c[-1]["content"][0]["text"]).answer for c in completion_conversations]
 
                 def parse_list(r: str) -> List[int]:
                     try:
                         # Remove brackets and split by commas
                         nums = [int(x.strip()) for x in r.strip("[]").split(",")]
                         return nums
-                    except:
+                    except: # noqa: E722
                         return []
 
                 parsed_responses = [parse_list(r) for r in responses]
@@ -76,7 +140,7 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
                     for r, a in zip(parsed_responses, answers)
                 ]
     
-        def _addition_correctness_reward_func(completions, **kwargs) -> List[float]:
+        def _addition_correctness_reward_func(completion_conversations, **kwargs) -> List[float]:
             """
             Reward function for addition task
             """
@@ -91,8 +155,7 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
             
             # parse the last message in each completion (completions are conversations) for data between <answer> and </answer> tags
             # only selects the data between the first answer tags in the message if there are multiple valid answer sets in it.
-            # TODO: verify this is actually only looking at the last message in the completion. 
-            responses = [self.parser.parse(c[0]["content"]).answer for c in completions]
+            responses = [self.parser.parse(c[-1]["content"][0]["text"]).answer for c in completion_conversations]
 
             def check_answer(response, answer):
                 try:
@@ -111,8 +174,8 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
             rewards = [check_answer(r, a) for r, a in zip(responses, answers)]
             return rewards
 
-        def correctness_reward_func(completions, **kwargs) -> List[float]:
-            """Reward function that checks if the predicted digits match the true labels"""
+        def correctness_reward_func(prompts, completions, completions_messages, **kwargs) -> List[float]:
+            """Reward function that checks if the predicted digits match the true labels. Only checks the last message in the completion."""
 
             tasks = kwargs["task"]
             if not (task == tasks[0] for task in tasks):
@@ -121,11 +184,13 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
                 )
 
             task = tasks[0]
+            
+            merged_completion_conversations = self.preprocess_messages(prompts_messages=prompts, completions_messages=completions_messages)
 
             if task == "recognition":
-                return _recognition_correctness_reward_func(completions, **kwargs)
+                return _recognition_correctness_reward_func(completion_conversations=merged_completion_conversations, **kwargs)
             elif task == "addition":
-                return _addition_correctness_reward_func(completions, **kwargs)
+                return _addition_correctness_reward_func(completion_conversations=merged_completion_conversations, **kwargs)
             else:
                 raise ValueError(f"Invalid task: {task}")
             
@@ -133,35 +198,47 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
         def format_reward_func(prompts, completions, completions_messages, **kwargs) -> List[float]:
             '''
             Returns the average compliance over all model messages in the completion.
-            '''
-            print("PROMPTS[0]")
-            print(prompts[0])
-            print("COMPLETIONS[0]")
-            print(completions[0])
-            print("COMPLETIONS_MESSAGES[0]")
-            print(completions_messages[0])
             
-            raise ValueError("Not implemented")
-            completion_rewards = []
-            for completion in completions:
-                # select all messages from the model
-                model_messages = [m for m in completion if m["role"] == "assistant"]
+            prompts: list of messages that make up the original prompt
+            completions: list of completion strings (not used, but required by the interface)
+            completions_messages: list of messages in the completion
+            '''
+            
+            # all messages that are part of the completion
+            merged_completion_conversations = self.preprocess_messages(prompts_messages=prompts, completions_messages=completions_messages)
+            
+            # average the format correctness over all model messages per completion
+            rewards = []
+            for conversation in merged_completion_conversations:
+                model_messages = []
+                for element in conversation:
+                    if element["role"] == "assistant":
+                        for message in element["content"]:
+                            if message["type"] == "text":
+                                model_messages.append(message["text"])
+                            else:
+                                raise ValueError(f"Invalid message type: {message['type']} from model. The model should only return text messages.")
                 
-                assert len(model_messages) == 2, f"There should be two model messages in the completion, before and after the environment response. Found {len(model_messages)}."
+                if len(model_messages) != 2:
+                    raise ValueError(f"There should be two model messages in the completion, before and after the environment response. Found {len(model_messages)}. {model_messages=}")
                 
-                completion_rewards = [check_format(m["content"]) for m in model_messages]
-                completion_reward = mean(completion_rewards)
-                completion_rewards.append(completion_reward)
+                # check the format of each model message
+                format_correct = [check_format(message) for message in model_messages]
                 
-            return completion_rewards
+                format_correct = mean(format_correct)
+                rewards.append(format_correct)
+                
+            return rewards
                 
             
         def check_format(text: str) -> float:
             '''
             Checks if the format is correct for a single message.
             '''
-            # remove the bootstrap prompt from the text if it appears at the start
-            text = text.removeprefix("Let me solve this step by step.\n")
+            # Find and start from the first <think> tag (removes the bootstrap prompt, if it exists)
+            think_start = text.find("<think>")
+            if think_start != -1:
+                text = text[think_start:]
 
             try:
                 # Check if the format is correct

@@ -82,8 +82,6 @@ class MultistepVisionEnv(Environment):
         _, _, _, vllm_inputs = self.prepare_data(
             inputs=inputs, processing_class=self.processing_class
         )
-        print("VLLM INPUTS[0]")
-        print(vllm_inputs[0])
         vlm_responses = vlm.generate(
             vllm_inputs, sampling_params=sampling_params, use_tqdm=False
         )
