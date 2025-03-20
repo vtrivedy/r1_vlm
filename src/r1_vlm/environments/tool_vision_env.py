@@ -102,16 +102,17 @@ class ToolVisionEnv(MultistepVisionEnv):
         # have a "result" field.
         self.env_parser = XMLParser(fields=["result"])
         
-        # 
+        # the maximum number of assistant messages allowed in the conversation before we end it. 
+        # can end early if the model provides an answer.
         self.max_steps = max_steps
         
-        
+    
     def inject_system_prompt(self, dataset: Dataset) -> Dataset:
         '''
         Called by inherited class to inject a system prompt containing tool schemas into the given dataset.
         
         Expects a dataset with a "messages" column. If the first message is a system message, it will be replaced with the formatted prompt.
-        Otherwise, this will raise an error. This is implemented as a transform, which does work JIT. 
+        Otherwise, this will raise an error. This implementation uses an eager map on the dataset.
         
         Returns the modified dataset.
         '''
@@ -122,7 +123,7 @@ class ToolVisionEnv(MultistepVisionEnv):
                 if not messages or messages[0]["role"] != "system":
                     raise ValueError("Expected first message to be a system message")
                     
-                # Replace the text content while preserving the message structure
+                # Replace the content of the system message with the formatted prompt
                 messages[0]["content"] = [{
                     "type": "text",
                     "text": self.formatted_prompt,
@@ -130,7 +131,7 @@ class ToolVisionEnv(MultistepVisionEnv):
                 
             return examples
 
-        return dataset.with_transform(_inject_prompt)
+        return dataset.map(_inject_prompt, batched=True)
     
     def get_rubric(self) -> List[RewardFunc]:
         raise NotImplementedError("ToolVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")

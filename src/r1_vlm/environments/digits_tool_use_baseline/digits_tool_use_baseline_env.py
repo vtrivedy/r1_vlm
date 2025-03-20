@@ -2,6 +2,7 @@ from typing import Callable
 
 from datasets import Dataset, concatenate_datasets, load_dataset
 from transformers import AutoProcessor
+from trl.trainer.grpo_trainer import RewardFunc
 
 from r1_vlm.datasets.utils import preprocess_r1_dataset
 from r1_vlm.environments.tool_vision_env import ToolVisionEnv
@@ -42,15 +43,33 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
 
         # concatenate the three splits
         dataset = concatenate_datasets([digits_1, digits_2, digits_3])
+        
+        # handle system prompt injection
+        dataset = self.inject_system_prompt(dataset)
 
         # handle image injection
         dataset = preprocess_r1_dataset(dataset)
         
-        # handle system prompt injection
-        dataset = self.inject_system_prompt(dataset)
+       
+        
+        import ipdb
+        ipdb.set_trace()
         
         return dataset
     
+    def get_rubric(self) -> list[RewardFunc]:
+        
+        
+            
+        
+        def placeholder_reward_func(prompts, completions, completions_messages, **kwargs) -> list[float]:
+            '''
+            Placeholder reward function that returns 1.0 for all completions. Currently testing things upstream. 
+            '''
+            
+            return [1.0] * len(prompts)
+
+        return [placeholder_reward_func]
     
 if __name__ == "__main__":
     env = DigitsToolUseBaselineEnv(
@@ -58,8 +77,3 @@ if __name__ == "__main__":
     )
     
     dataset = env.get_dataset()
-    import ipdb
-    ipdb.set_trace()
-    
-    
-    
