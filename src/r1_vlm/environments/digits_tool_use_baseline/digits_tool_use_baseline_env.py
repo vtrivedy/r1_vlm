@@ -1,4 +1,6 @@
-from typing import Callable
+import re
+from statistics import mean
+from typing import Any, Callable
 
 from datasets import Dataset, concatenate_datasets, load_dataset
 from transformers import AutoProcessor
@@ -52,17 +54,65 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
         
         return dataset
     
+    def get_assistant_messages(self, conversation: list[dict[str, Any]]) -> list[str]:
+        '''
+        Returns the assistant messages from the completion messages as a list of strings.
+        '''
+        assistant_messages = [message["content"][0]["text"] for message in conversation if message["role"] == "assistant"]
+        return assistant_messages
+    
     def get_rubric(self) -> list[RewardFunc]:
         
         
+        def format_reward_func(prompts, completions, completions_messages, **kwargs) -> list[float]:
+            '''
+            Returns the average compliance over all model messages in the completion.
             
+            prompts: list of messages that make up the original prompt
+            completions: list of completion strings (not used, but required by the interface)
+            completions_messages: list of messages in the completion
+            '''
+            
+            merged_completion_conversations = self.preprocess_messages(prompts_messages=prompts, completions_messages=completions_messages)
+            
+            rewards = []
+            for conversation in merged_completion_conversations:
+                assistant_messages = self.get_assistant_messages(conversation)
+                
+                format_correct = [check_format(message) for message in assistant_messages]
+                format_correct = mean(format_correct)
+                rewards.append(format_correct)
+                
+            return rewards
         
-        def placeholder_reward_func(prompts, completions, completions_messages, **kwargs) -> list[float]:
+        
+        def check_format(text: str) -> float:
             '''
-            Placeholder reward function that returns 1.0 for all completions. Currently testing things upstream. 
+            Checks if the format is correct for a single message.
             '''
-            
-            return [1.0] * len(prompts)
+            # Find and start from the first <think> tag (removes the bootstrap prompt, if it exists)
+            think_start = text.find("<think>")
+            if think_start != -1:
+                text = text[think_start:]
 
-        return [placeholder_reward_func]
+            try:
+                # Check if the format is correct
+                answer_regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<answer>([\s\S]*?)<\/answer>$"
+                tool_regex = r"^<think>([^<]*(?:<(?!/?think>)[^<]*)*)<\/think>\n<tool>([\s\S]*?)<\/tool>$"
+
+                answer_match = re.search(answer_regex, text, re.DOTALL)
+                tool_match = re.search(tool_regex, text, re.DOTALL)
+
+                if (answer_match is not None and len(answer_match.groups()) == 2) or \
+                   (tool_match is not None and len(tool_match.groups()) == 2):
+                    return 1.0
+                return 0.0
+            except Exception as e:
+                print(f"Error in check_format: {e}")
+                return 0.0
+                
+
+    
+
+        return [format_reward_func]
     

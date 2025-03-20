@@ -140,7 +140,6 @@ class ToolVisionEnv(MultistepVisionEnv):
     def call_tool(self, tool_json: str, messages: List[Dict[str, str]], **kwargs: Any) -> str:
         """Call a tool based on JSON command. All tools are passed messages as a kwarg."""
         
-        print("INSIDE CALL TOOL")
         try:
             command = json.loads(tool_json)
             if not isinstance(command, dict):
