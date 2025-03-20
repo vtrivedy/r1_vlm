@@ -1,9 +1,11 @@
 import inspect
+import json
 from typing import Any, Callable, Dict, List
 
 from datasets import Dataset
 from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
+from verifiers.parsers import XMLParser
 
 from r1_vlm.environments.multistep_vision_env import MultistepVisionEnv
 from r1_vlm.tools.digits_answer_tool import get_answer
@@ -92,6 +94,18 @@ class ToolVisionEnv(MultistepVisionEnv):
         formatted_prompt = DEFAULT_TOOL_PROMPT_TEMPLATE.format(tool_descriptions=tool_descriptions)
         self.formatted_prompt = formatted_prompt
         
+        # will be used to parse responses from the model. Each response is expected to have a "think" and either a 
+        # "tool" or "answer" field.
+        self.llm_parser = XMLParser(fields=["think", ("tool", "answer")])
+        
+        # will be used to format responses from the environment to return to the model. Tool responses are expected to 
+        # have a "result" field.
+        self.env_parser = XMLParser(fields=["result"])
+        
+        # 
+        self.max_steps = max_steps
+        
+        
     def inject_system_prompt(self, dataset: Dataset) -> Dataset:
         '''
         Called by inherited class to inject a system prompt containing tool schemas into the given dataset.
@@ -121,11 +135,78 @@ class ToolVisionEnv(MultistepVisionEnv):
     def get_rubric(self) -> List[RewardFunc]:
         raise NotImplementedError("ToolVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
     
-    def env_response(self) -> List[Dict[str, Any]]:
-        raise NotImplementedError("ToolVisionEnv requires a env response for your task. Expected to be implemented by subclass.")
+    
+    def call_tool(self, tool_json: str, **kwargs: Any) -> str:
+        """Call a tool based on JSON command."""
+        try:
+            command = json.loads(tool_json)
+            if not isinstance(command, dict):
+                return "Error: Tool command must be a JSON object"
+            
+            tool_name = command.get("name")
+            if not tool_name:
+                return "Error: Tool command must specify 'name'"
+            
+            if tool_name not in self.tools:
+                return f"Error: Unknown tool '{tool_name}'"
+            
+            tool_func = self.tools[tool_name]
+            tool_args = command.get("args", {})
+            
+            # Call the tool function with arguments
+            result = tool_func(**tool_args)
+            return str(result)
+        except json.JSONDecodeError:
+            return "Error: Invalid JSON format"
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    def env_response(self, messages: List[Dict[str, str]], **kwargs: Any) -> list[dict[str, Any]]:
+        # TODO: How to inject the input example into the tool call/data we need to cheat?
+        try:
+            message_to_parse = messages[-1]["content"]
+            if message_to_parse["role"] != "assistant" or message_to_parse["type"] != "text":
+                raise ValueError(f"Expected last message to be an assistant message and text content: {message_to_parse=}")
+            
+            parsed = self.llm_parser.parse(message_to_parse)
+            
+            # Check if we got a valid tool field (not just None from failed parsing)
+            if hasattr(parsed, 'tool') and parsed.tool is not None:
+                result = self.call_tool(parsed.tool)
+                if len(result.strip()) > 0:
+                    return [{"role": "user", "content": self.env_parser.format(result=result), "type": "text"}]
+                else:
+                    return [{"role": "user", "content": "Error: Tool execution returned empty output.", "type": "text"}]
+            else:
+                return [{"role": "user", "content": parsed.answer, "type": "text"}]
+        except Exception as e:
+            return [{"role": "user", "content": str(e), "type": "text"}]
+        
+        
+    def _get_step_count(self, messages: List[Dict[str, Any]]) -> int:
+        '''
+        Counts the number of assistant messages in the message history.
+        
+        Args:
+            messages: the conversation history
+        '''
+        
+        return sum(1 for message in messages if message["role"] == "assistant")
     
     def is_completed(self, messages: List[Dict[str, Any]], **kwargs: Any) -> bool:
-        raise NotImplementedError("ToolVisionEnv requires a is_completed method for your task. Expected to be implemented by subclass.")
+        '''
+        A completion is finished when either:
+        1. We've seen self.max_steps messages from the assistant
+        2. The assistant provides an answer.
+        '''
+        
+        step_count = self._get_step_count(messages)
+        
+        if step_count >= self.max_steps:
+            return True
+        
+        parsed = self.llm_parser.parse(messages[-1]["content"])
+        return hasattr(parsed, 'answer') and parsed.answer is not None
     
     
         

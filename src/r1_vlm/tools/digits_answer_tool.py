@@ -17,8 +17,8 @@ def get_answer(task: str, **kwargs) -> str:
         
 
     Examples:
-        {"task": "recognition"}
-        {"task": "addition"}
+        {"name": "get_answer", "args": {"task": "recognition"}}
+        {"name": "get_answer", "args": {"task": "addition"}}
     '''
     
     # NOTE: The tool cheats (purposely)! It's not a "serious" tool, but rather a proof of concept to verify tool calling works properly. 

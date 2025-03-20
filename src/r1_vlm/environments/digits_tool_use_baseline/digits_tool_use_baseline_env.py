@@ -20,11 +20,13 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
         dataset_name: str = "sunildkumar/digit-recognition-r1",
         # tool that directly gets the answer from the dataset
         tools: list[Callable] = [get_answer],
+        max_steps: int = 10,
         ):
         
         super().__init__(
             tools=tools,
             processing_class=processing_class,
+            max_steps=max_steps,
         )
         
         self.dataset_name = dataset_name
@@ -45,9 +47,9 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
         dataset = preprocess_r1_dataset(dataset)
         
         # handle system prompt injection
-        transformed_dataset = self.inject_system_prompt(dataset)
+        dataset = self.inject_system_prompt(dataset)
         
-        return transformed_dataset
+        return dataset
     
     
 if __name__ == "__main__":
