@@ -1,5 +1,6 @@
-from datasets import Dataset, load_dataset
 import PIL
+from datasets import Dataset
+
 # we use this placeholder to indicate where to inject images into our datasets.
 # Currently assuming only one image per example. We might have to do something more sophisticated in the future if we want to support multiple input images per example.
 IMAGE_PLACEHOLDER = "IMAGE_PLACEHOLDER"
