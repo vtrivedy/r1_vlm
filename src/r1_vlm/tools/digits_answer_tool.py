@@ -9,18 +9,31 @@ def get_answer(task: str, **kwargs) -> str:
     
     Args:
         task: str, either "recognition" or "addition"
+        kwargs: dict, should not be used. 
+    
     
     Returns:
         A string representation of the answer. e.g. "[4, 7]" for recognition, or "11" for addition
+        
+
+    Examples:
+        {"task": "recognition"}
+        {"task": "addition"}
     '''
     
+    # NOTE: The tool cheats (purposely)! It's not a "serious" tool, but rather a proof of concept to verify tool calling works properly. 
+        
     valid_tasks = ["recognition", "addition"]
     if task not in valid_tasks:
         raise ValueError(f" Error: Invalid task: {task}. Valid tasks are: {valid_tasks}")
     
     # verify that the kwargs contains the input example
     if "input_example" not in kwargs:
-        raise ValueError(" Error: The kwargs must contain the input example. We should be injecting this data into the tool call in the env response.")
+        raise ValueError(" Error: The kwargs must contain the input example. We should be injecting this data into the tool call in the env response. This is a code error rather than a model error.")
+    
+    # verify no other kwargs are passed
+    if len(kwargs) > 1:
+        raise ValueError(" Error: kwargs were passed data from the tool call. This is not allowed. Only use the named arguments.")
     
     input_example = kwargs["input_example"]
     
