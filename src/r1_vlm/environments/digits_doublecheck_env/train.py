@@ -61,13 +61,13 @@ training_args = GRPOConfig(
     save_total_limit=50,
     num_train_epochs=1,
     per_device_train_batch_size=5,
-    num_generations=5,
+    num_generations=15,
     gradient_accumulation_steps=4,
     gradient_checkpointing=gradient_checkpointing,
     bf16=True,
     # GRPO specific parameters
     max_prompt_length=None,  # must be None for vllm + verifiers
-    max_completion_length=512,
+    max_completion_length=1024,
     beta=0.001,
     temperature=1.0,
     sync_ref_model=True,
@@ -77,7 +77,7 @@ training_args = GRPOConfig(
     use_vllm=True,
     vllm_gpu_memory_utilization=0.5,
     report_to="wandb",
-    vllm_device="cuda:1",
+    vllm_device="cuda:3",
 )
 
 
@@ -91,3 +91,6 @@ trainer = QwenGRPOTrainer(
 )
 
 trainer.train()
+
+#CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digits_doublecheck_env/train.py
+

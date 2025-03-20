@@ -6,11 +6,10 @@ from trl.trainer.grpo_trainer import RewardFunc
 
 from .multistep_vision_env import MultistepVisionEnv
 
-ENV_MESSAGE = {'role': 'user', 'content': [{"text": "Are you sure?", "type": "text"}]}
+ENV_MESSAGE = {'role': 'user', 'content': [{"text": "Are you sure? Please double check your work.", "type": "text"}]}
 
 class DoubleCheckVisionEnv(MultistepVisionEnv):
     def __init__(self, 
-                 dataset_name: str,
                  sampling_args: dict[str, Any] = {},
                  mask_env_response: bool = True,
                  max_workers: int = 10,
@@ -27,8 +26,7 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
         """
         
         super().__init__(sampling_args=sampling_args, mask_env_response=mask_env_response, max_workers=max_workers, processing_class=processing_class)
-        
-        self.dataset_name = dataset_name
+
 
     def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
         raise NotImplementedError("DoubleCheckVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
@@ -37,14 +35,19 @@ class DoubleCheckVisionEnv(MultistepVisionEnv):
     
     def is_completed(self, messages: List[Dict[str, Any]], **kwargs: Any) -> bool:
         """
-        Checks if the conversation is completed. In this case, it's completed once the user asks "Are you sure?" and then model responds. 
+        Checks if the conversation is completed. In this case, it's completed once 
+        the user asks "Please restate your answer again." and then model responds.
         """
-        return len(messages) > 1 and messages[-2] == ENV_MESSAGE
+        # Need to check if we've gone through the pattern: ENV_MESSAGE followed by two assistant responses - the bootstrap and the actual response. 
+        return (len(messages) > 2 and 
+                messages[-3] == ENV_MESSAGE and 
+                messages[-2]["role"] == "assistant")
         
-       
-    def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> Dict[str, Any]:
+    def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> List[Dict[str, Any]]:
         """
-        Returns the environment response, which is simply asking the model
-        if it's sure of its answer.
+        Returns the environment response and a bootstrap assistant message.
         """
-        return ENV_MESSAGE
+        return [
+            ENV_MESSAGE,
+            {'role': 'assistant', 'content': [{"text": "<think> ", "type": "text"}]}
+        ]

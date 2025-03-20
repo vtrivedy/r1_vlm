@@ -56,7 +56,7 @@ class MultistepVisionEnv(Environment):
     @abstractmethod
     def env_response(
         self, messages: list[dict[str, str]], **kwargs: Any
-    ) -> dict[str, str]:
+    ) ->  list[dict[str, Any]]:
         pass
 
     def prepare_data(self, *, inputs, processing_class):
@@ -82,7 +82,8 @@ class MultistepVisionEnv(Environment):
         _, _, _, vllm_inputs = self.prepare_data(
             inputs=inputs, processing_class=self.processing_class
         )
-
+        print("VLLM INPUTS[0]")
+        print(vllm_inputs[0])
         vlm_responses = vlm.generate(
             vllm_inputs, sampling_params=sampling_params, use_tqdm=False
         )
@@ -134,7 +135,8 @@ class MultistepVisionEnv(Environment):
 
             # otherwise, we get the env response
             else:
-                state["messages"].append(self.env_response(state["messages"]))
+                env_response_messages = self.env_response(state["messages"])
+                state["messages"].extend(env_response_messages)
 
             if not len(state["completion_mask"]) == len(state["completion_ids"]):
                 print(state["messages"])
@@ -171,7 +173,6 @@ class MultistepVisionEnv(Environment):
         states = [
             {
                 "messages": conversation,
-                # the number of messages in the conversation before generation
                 "prompt_messages": len(conversation),
                 "prompt_ids": [],
                 "completed": False,
@@ -216,6 +217,4 @@ class MultistepVisionEnv(Environment):
             + json.dumps(clean_messages_for_logging(states[0]["messages"]), indent=4)
         )
         
-        return completion_ids
-        # TODO: return everything
-        #return output
+        return output

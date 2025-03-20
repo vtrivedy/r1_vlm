@@ -14,16 +14,15 @@ from r1_vlm.environments.double_check_env import DoubleCheckVisionEnv
 class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
     def __init__(
         self,
-        dataset_name: str = "sunildkumar/digit-recognition-r1",
+        dataset_name: str = "sunildkumar/digits-doublecheck-r1",
         mask_env_response: bool = True,
         processing_class: AutoProcessor = None,
     ):
         super().__init__(
-            dataset_name=dataset_name,
             mask_env_response=mask_env_response,
             processing_class=processing_class,
         )
-        
+        self.dataset_name = dataset_name
         self.parser = XMLParser(fields=["think", "answer"])
         
     def get_dataset(self) -> Dataset:
@@ -131,16 +130,24 @@ class DigitsDoubleCheckEnv(DoubleCheckVisionEnv):
                 raise ValueError(f"Invalid task: {task}")
             
         
-        def format_reward_func(completions, **kwargs) -> List[float]:
+        def format_reward_func(prompts, completions, completions_messages, **kwargs) -> List[float]:
             '''
             Returns the average compliance over all model messages in the completion.
             '''
+            print("PROMPTS[0]")
+            print(prompts[0])
+            print("COMPLETIONS[0]")
+            print(completions[0])
+            print("COMPLETIONS_MESSAGES[0]")
+            print(completions_messages[0])
+            
+            raise ValueError("Not implemented")
             completion_rewards = []
             for completion in completions:
                 # select all messages from the model
                 model_messages = [m for m in completion if m["role"] == "assistant"]
                 
-                assert len(model_messages) == 2, "There should be two model messages in the completion, before and after the environment response."
+                assert len(model_messages) == 2, f"There should be two model messages in the completion, before and after the environment response. Found {len(model_messages)}."
                 
                 completion_rewards = [check_format(m["content"]) for m in model_messages]
                 completion_reward = mean(completion_rewards)
