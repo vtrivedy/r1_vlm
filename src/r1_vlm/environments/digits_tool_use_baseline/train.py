@@ -7,6 +7,7 @@ from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
 from r1_vlm.environments.digits_tool_use_baseline.digits_tool_use_baseline_env import (
     DigitsToolUseBaselineEnv,
 )
+from r1_vlm.tools.digits_answer_tool import DigitsAnswerTool, set_digits_answer_tool
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
 os.environ["WANDB_PROJECT"] = "digits-tool-use-baseline"
@@ -46,6 +47,9 @@ processor = AutoProcessor.from_pretrained(
 vf_env = DigitsToolUseBaselineEnv(processing_class=processor)
 dataset = vf_env.get_dataset()
 rubric = vf_env.get_rubric()
+digits_answer_tool = DigitsAnswerTool(dataset)
+digits_answer_tool.build_hash_table(dataset)  # Build the hash table
+set_digits_answer_tool(digits_answer_tool)    # Make it available to get_answer
 
 
 

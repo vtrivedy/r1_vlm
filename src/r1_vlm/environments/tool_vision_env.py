@@ -137,8 +137,8 @@ class ToolVisionEnv(MultistepVisionEnv):
         raise NotImplementedError("ToolVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
     
     
-    def call_tool(self, tool_json: str, **kwargs: Any) -> str:
-        """Call a tool based on JSON command."""
+    def call_tool(self, tool_json: str, messages: List[Dict[str, str]], **kwargs: Any) -> str:
+        """Call a tool based on JSON command. All tools are passed messages as a kwarg."""
         
         print("INSIDE CALL TOOL")
         try:
@@ -156,8 +156,11 @@ class ToolVisionEnv(MultistepVisionEnv):
             tool_func = self.tools[tool_name]
             tool_args = command.get("args", {})
             
+            kwargs = {}
+            kwargs["messages"] = messages
+            
             # Call the tool function with arguments
-            result = tool_func(**tool_args)
+            result = tool_func(**tool_args, **kwargs)
             return str(result)
         except json.JSONDecodeError:
             return "Error: Invalid JSON format"
@@ -165,7 +168,6 @@ class ToolVisionEnv(MultistepVisionEnv):
             return f"Error: {str(e)}"
     
     def env_response(self, messages: List[Dict[str, str]], **kwargs: Any) -> list[dict[str, Any]]:
-        # TODO: How to inject the input example into the tool call/data we need to cheat?
         try:
             last_message = messages[-1]
             # the last message should be an assistant message with text content
@@ -180,22 +182,22 @@ class ToolVisionEnv(MultistepVisionEnv):
             
             # Check if we got a valid tool field (not just None from failed parsing)
             if hasattr(parsed, 'tool') and parsed.tool is not None:
-                result = self.call_tool(parsed.tool)
-                if len(result.strip()) > 0:
-                    result = self.env_parser.format(result=result)
-    
-                    
-                    return [{"role": "user", "content": [{"text": self.env_parser.format(result=result), "type": "text"}]}]
+                result = self.call_tool(tool_json=parsed.tool, messages=messages)
+                if len(result.strip()) > 0:                    
+                    response =  {"role": "user", "content": [{"text": self.env_parser.format(result=result), "type": "text"}]}
                 else:
-                    return [{"role": "user", "content": [{"text": "Error: Tool execution returned empty output.", "type": "text"}]}]
+                    response = {"role": "user", "content": [{"text": "Error: Tool execution returned empty output.", "type": "text"}]}
             elif hasattr(parsed, "answer") and parsed.answer is not None:
-                return [{"role": "user", "content": [{"text": parsed.answer, "type": "text"}]}]
+                response = {"role": "user", "content": [{"text": parsed.answer, "type": "text"}]}
             else:
-                return [{"role": "user", "content": [{"text": "Error: No tool call or answer found in your last message.", "type": "text"}]}]
+                response = {"role": "user", "content": [{"text": "Error: No tool call or answer found in your last message.", "type": "text"}]}
                 
         except Exception as e:
-            return [{"role": "user", "content": [{"text":"Error when trying to respond to your last message: "+str(e), "type": "text"}]}]
+            response = {"role": "user", "content": [{"text":"Error when trying to respond to your last message: "+str(e), "type": "text"}]}
         
+        bootstrap = {'role': 'assistant', 'content': [{"text": "<think>", "type": "text"}]}
+        env_response_data = [response, bootstrap]
+        return env_response_data
         
     def _get_step_count(self, messages: List[Dict[str, Any]]) -> int:
         '''
