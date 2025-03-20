@@ -1,6 +1,7 @@
 import inspect
 from typing import Any, Callable, Dict, List
 
+from datasets import Dataset
 from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 
@@ -17,8 +18,6 @@ def infer_schema_from_function(func: Callable) -> Dict[str, Any]:
     # Parse docstring sections
     doc_parts = doc.split("\n\n")
     description = doc_parts[0].strip()
-    
-    print(f"parts: {doc_parts}")
     
     # Extract examples if present
     examples = []
@@ -87,14 +86,37 @@ class ToolVisionEnv(MultistepVisionEnv):
         # Infer schemas from tool functions
         self.tool_schemas = [infer_schema_from_function(tool) for tool in tools]
         self.tools = {tool.__name__: tool for tool in tools}    
+        
         # Format the system prompt with tool descriptions
         tool_descriptions = format_tool_descriptions(self.tool_schemas)
         formatted_prompt = DEFAULT_TOOL_PROMPT_TEMPLATE.format(tool_descriptions=tool_descriptions)
+        self.formatted_prompt = formatted_prompt
         
-        import ipdb
-        ipdb.set_trace()
-        print('hi')
-    
+    def inject_system_prompt(self, dataset: Dataset) -> Dataset:
+        '''
+        Called by inherited class to inject a system prompt containing tool schemas into the given dataset.
+        
+        Expects a dataset with a "messages" column. If the first message is a system message, it will be replaced with the formatted prompt.
+        Otherwise, this will raise an error. This is implemented as a transform, which does work JIT. 
+        
+        Returns the modified dataset.
+        '''
+        def _inject_prompt(examples):
+            messages_batch = examples["messages"]
+            
+            for messages in messages_batch:
+                if not messages or messages[0]["role"] != "system":
+                    raise ValueError("Expected first message to be a system message")
+                    
+                # Replace the text content while preserving the message structure
+                messages[0]["content"] = [{
+                    "type": "text",
+                    "text": self.formatted_prompt,
+                }]
+                
+            return examples
+
+        return dataset.with_transform(_inject_prompt)
     
     def get_rubric(self) -> List[RewardFunc]:
         raise NotImplementedError("ToolVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
