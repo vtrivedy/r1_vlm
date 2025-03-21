@@ -221,7 +221,15 @@ class ToolVisionEnv(MultistepVisionEnv):
             return True
         
         parsed = self.llm_parser.parse(messages[-1]["content"][0]["text"])
-        return hasattr(parsed, 'answer') and parsed.answer is not None
+        
+        # if the last message includes the EOS token, we should end. The model is getting a bad habit of answering without 
+        # responding at all. We need to penalize this. 
+        has_eos = "<|im_end|>" in messages[-1]["content"][0]["text"]
+        
+        if has_eos:
+            print("ENDED EARLY because of EOS token")
+        
+        return (hasattr(parsed, 'answer') and parsed.answer is not None) or has_eos
     
     
         
