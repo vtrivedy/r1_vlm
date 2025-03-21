@@ -4,13 +4,13 @@ from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from trl import GRPOConfig, ModelConfig
 from trl.trainer.qwen_grpo_trainer import QwenGRPOTrainer
 
-from r1_vlm.environments.digits_tool_use_baseline.digits_tool_use_baseline_env import (
-    DigitsToolUseBaselineEnv,
+from r1_vlm.environments.digits_tool_use.digits_tool_use_env import (
+    DigitsToolUseEnv,
 )
 from r1_vlm.tools.digits_answer_tool import DigitsAnswerTool, set_digits_answer_tool
 
 os.environ["WANDB_ENTITY"] = "groundlightai"
-os.environ["WANDB_PROJECT"] = "digits-tool-use-baseline"
+os.environ["WANDB_PROJECT"] = "digits-tool-use"
 
 
 
@@ -44,7 +44,7 @@ processor = AutoProcessor.from_pretrained(
     model_config.model_name_or_path, padding_side="left"
 )
 
-vf_env = DigitsToolUseBaselineEnv(processing_class=processor)
+vf_env = DigitsToolUseEnv(processing_class=processor)
 dataset = vf_env.get_dataset()
 rubric = vf_env.get_rubric()
 digits_answer_tool = DigitsAnswerTool(dataset)
@@ -55,7 +55,7 @@ set_digits_answer_tool(digits_answer_tool)    # Make it available to get_answer
 
 training_args = GRPOConfig(
     model_init_kwargs=model_config,
-    output_dir="vlm-r1-digits-tool-use-baseline",
+    output_dir="vlm-r1-digits-tool-use",
     learning_rate=1e-6,
     adam_beta2=0.98,
     lr_scheduler_type="cosine",
@@ -96,5 +96,5 @@ trainer = QwenGRPOTrainer(
 
 trainer.train()
 
-#CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digits_tool_use_baseline/train.py
+#CUDA_VISIBLE_DEVICES=0,1,2,3 uv run accelerate launch --config_file src/r1_vlm/deepspeed_configs/multi_gpu_3only.yaml src/r1_vlm/environments/digits_tool_use/train.py
 

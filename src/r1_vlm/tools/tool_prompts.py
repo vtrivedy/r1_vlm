@@ -14,4 +14,5 @@ For each step:
 Tools expect specific JSON input formats. Follow the examples carefully.
 Do not make up tools or arguments that aren't listed. 
 Only use the named arguments for tools. If a tool has kwargs, do not use them. The user will provide these as necessary. 
+If the tool includes the argument "image_name", you must provide it the name of an image from this conversation. The user will provide the relevant image data for that image name. 
 """
