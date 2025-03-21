@@ -90,11 +90,12 @@ def set_digits_answer_tool(tool: DigitsAnswerTool):
     global _digits_answer_tool
     _digits_answer_tool = tool
 
-def get_answer(task: str, **kwargs) -> str:
+def get_answer(image_name: str, task: str, **kwargs) -> str:
     '''
     Returns the answer, either listing or summing the digits in the given image.
     
     Args:
+        image_name: str, the name of the image to submit to the tool.
         task: str, either "recognition" or "addition"
         kwargs: dict, should not be used. 
     
@@ -104,8 +105,8 @@ def get_answer(task: str, **kwargs) -> str:
         
 
     Examples:
-        <tool>{"name": "get_answer", "args": {"task": "recognition"}}</tool> 
-        <tool>{"name": "get_answer", "args": {"task": "addition"}}</tool>
+        <tool>{"name": "get_answer", "args": {"image_name": "input_image", "task": "recognition"}}</tool> 
+        <tool>{"name": "get_answer", "args": {"image_name": "input_image", "task": "addition"}}</tool>
     '''
     
     # NOTE: The tool cheats (purposely)! It's not a "serious" tool, but rather a proof of concept to verify tool calling works properly. 
@@ -116,47 +117,22 @@ def get_answer(task: str, **kwargs) -> str:
     valid_tasks = ["recognition", "addition"]
     if task not in valid_tasks:
         raise ValueError(f" Error: Invalid task: {task}. Valid tasks are: {valid_tasks}")
+
+    images = kwargs["images"]
     
-    # verify that the kwargs contains the messages
-    if "messages" not in kwargs:
-        raise ValueError(" Error: The kwargs must contain the messages. We should be injecting this data into the tool call in the env response. This is a code error rather than a model error.")
+    image_to_use = images.get(image_name, None)
     
-    # verify no other kwargs are passed
-    if len(kwargs) > 1:
-        raise ValueError(" Error: kwargs were passed data from the tool call. This is not allowed. Only use the named arguments.")
+    if image_to_use is None:
+        raise ValueError(f"Error: Image {image_name} not found. Valid image names are: {images.keys()}")
     
-    messages = kwargs["messages"]
-    
-    images = extract_images(messages)
-    if len(images) != 1:
-        print(f"Expected to find exactly one image in the messages. Found {len(images)} images.")
-        raise ValueError(" Error: Expected exactly one image in the messages. This is a code error rather than a model error.")
-    
-    image = images[0]
-    result = _digits_answer_tool.lookup_image(image)
+    result = _digits_answer_tool.lookup_image(image_to_use)
     
     if task == "recognition":
         data = result["label"]
-    else:  # addition
+    else:
         data = result["total"]
         
     return str(data)
-
-def extract_images(messages: list[dict[str, str]]) -> list[PIL.Image.Image]:
-    '''
-    Extracts images from the messages.
-    
-    Args:
-        messages: list of messages
-    '''
-    
-    images = []
-    for element in messages:
-        for message in element["content"]:
-            if message["type"] == "image":
-                images.append(message["image"])
-                
-    return images
 
     
     

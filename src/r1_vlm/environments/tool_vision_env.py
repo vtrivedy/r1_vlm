@@ -3,6 +3,7 @@ import json
 from typing import Any, Callable, Dict, List
 
 from datasets import Dataset
+from PIL.Image import Image
 from transformers import AutoProcessor
 from trl.trainer.grpo_trainer import RewardFunc
 from verifiers.parsers import XMLParser
@@ -102,6 +103,8 @@ class ToolVisionEnv(MultistepVisionEnv):
         # have a "result" field.
         self.env_parser = XMLParser(fields=["result"])
         
+        self.image_name_parser = XMLParser(fields=["image_name"])
+        
         # the maximum number of assistant messages allowed in the conversation before we end it. 
         # can end early if the model provides an answer.
         self.max_steps = max_steps
@@ -137,8 +140,41 @@ class ToolVisionEnv(MultistepVisionEnv):
         raise NotImplementedError("ToolVisionEnv requires a rubric for your task. Expected to be implemented by subclass.")
     
     
-    def call_tool(self, tool_json: str, messages: List[Dict[str, str]], **kwargs: Any) -> str:
-        """Call a tool based on JSON command. All tools are passed messages as a kwarg."""
+    def _conversation_to_image_dict(self, conversation: List[Dict[str, Any]]) -> Dict[str, Image]:
+        '''
+        Converts a conversation to a dictionary of image names and PIL images. This dict will be provided as a kwarg to all tools. 
+        '''
+        
+        images_list: tuple[str, Image] = []
+        
+        # We should look at each element of the conversation. For each element, we should check the content. 
+        # If we find an image, we should find the image name one message before it in the same content block.
+        
+        for element in conversation:
+            content = element["content"]
+            for index in range(len(content)):
+                
+                # look at the current message, is it an image? If it is, we should find the image name one message before it in the same content block.
+                message = content[index]
+                if message["type"] == "image" and message["image"] is not None:
+                    image_name = self.image_name_parser.parse(content[index - 1]["text"]).image_name
+                    images_list.append((image_name, message["image"]))
+    
+        # check that all image names are unique
+        image_names = set(image_name for image_name, _ in images_list)
+        
+        if len(image_names) != len(images_list):
+            raise ValueError("All image names must be unique. Found duplicate image names: " + str(image_names))
+        
+        return dict(images_list)
+        
+        
+    def call_tool(self, tool_json: str, messages: List[Dict[str, str]], images: Dict[str, Image], **kwargs: Any) -> str:
+        """
+        Call a tool based on JSON command. 
+        All tools are passed messages as a kwarg.
+        All tools are passed images as a kwarg - a dictionary of image names -> PIL images.
+        """
         
         try:
             command = json.loads(tool_json)
@@ -157,6 +193,7 @@ class ToolVisionEnv(MultistepVisionEnv):
             
             kwargs = {}
             kwargs["messages"] = messages
+            kwargs["images"] = images
             
             # Call the tool function with arguments
             result = tool_func(**tool_args, **kwargs)
@@ -166,7 +203,7 @@ class ToolVisionEnv(MultistepVisionEnv):
         except Exception as e:
             return f"Error: {str(e)}"
     
-    def env_response(self, messages: List[Dict[str, str]], **kwargs: Any) -> list[dict[str, Any]]:
+    def env_response(self, messages: List[Dict[str, Any]], **kwargs: Any) -> list[dict[str, Any]]:
         try:
             last_message = messages[-1]
             # the last message should be an assistant message with text content
@@ -181,7 +218,9 @@ class ToolVisionEnv(MultistepVisionEnv):
             
             # Check if we got a valid tool field (not just None from failed parsing)
             if hasattr(parsed, 'tool') and parsed.tool is not None:
-                result = self.call_tool(tool_json=parsed.tool, messages=messages)
+                images = self._conversation_to_image_dict(messages)
+                
+                result = self.call_tool(tool_json=parsed.tool, messages=messages, images=images)
                 if len(result.strip()) > 0:                    
                     response =  {"role": "user", "content": [{"text": self.env_parser.format(result=result), "type": "text"}]}
                 else:

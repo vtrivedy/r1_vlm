@@ -11,16 +11,16 @@ from r1_vlm.environments.tool_vision_env import ToolVisionEnv
 from r1_vlm.tools.digits_answer_tool import get_answer
 
 
-class DigitsToolUseBaselineEnv(ToolVisionEnv):
+class DigitsToolUseEnv(ToolVisionEnv):
     '''
-    This env tests the ability of the model to use tools, in this case a tool that "cheats" by getting correct answer directly from the dataset.
-    This is meant as a sanity check to ensure that the tool calling works properly, not a proper experiment.
+    This env tests the ability of the model to use tools, in this case a tool that "cheats" by looking up the correct answer given the input image.
+    This is meant as a sanity check/development environment to ensure that the tool calling works properly, not a proper experiment.
     '''
     
     def __init__(
         self,
         processing_class: AutoProcessor,
-        dataset_name: str = "sunildkumar/digit-recognition-tool-use-baseline-r1",
+        dataset_name: str = "sunildkumar/digit-recognition-tool-use-r1",
         # tool that directly gets the answer from the dataset
         tools: list[Callable] = [get_answer],
         max_steps: int = 10,
@@ -40,6 +40,7 @@ class DigitsToolUseBaselineEnv(ToolVisionEnv):
 
         # select all three splits
         digits_1 = dataset["digits_1"]
+        
         digits_2 = dataset["digits_2"]
         digits_3 = dataset["digits_3"]
 

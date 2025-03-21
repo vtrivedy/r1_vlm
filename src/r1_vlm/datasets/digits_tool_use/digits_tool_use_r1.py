@@ -35,6 +35,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "user",
                 "content": [
+                    {"type": "text", "text": "<image_name> input_image </image_name>"},
                     {"type": "image", "image": IMAGE_PLACEHOLDER},
                     {"type": "text", "text": instruction},
                 ],
@@ -42,7 +43,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": "Let me solve this step by step.\n"}
+                    {"type": "text", "text": "<think> Let me solve this step by step.\n"}
                 ],
             },
         ]
@@ -74,6 +75,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "user",
                 "content": [
+                    {"type": "text", "text": "<image_name> input_image </image_name>"},
                     {"type": "image", "image": IMAGE_PLACEHOLDER},
                     {"type": "text", "text": instruction},
                 ],
@@ -81,7 +83,7 @@ def generate_r1_messages(example, task):
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": "Let me solve this step by step.\n"}
+                    {"type": "text", "text": "<think> Let me solve this step by step.\n"}
                 ],
             },
         ]
@@ -120,5 +122,5 @@ def create_r1_counting_mnist_dataset():
 if __name__ == "__main__":
     dataset = create_r1_counting_mnist_dataset()
     dataset.push_to_hub(
-        "sunildkumar/digit-recognition-tool-use-baseline-r1", token=os.getenv("HUGGINGFACE_HUB_TOKEN")
+        "sunildkumar/digit-recognition-tool-use-r1", token=os.getenv("HUGGINGFACE_HUB_TOKEN")
     )
