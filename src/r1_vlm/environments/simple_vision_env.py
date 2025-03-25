@@ -72,7 +72,7 @@ class SimpleVisionEnv(SimpleEnv):
 
         completion_ids = [states[i]["completion_ids"] for i in range(len(states))]
 
-        return completion_ids
+        return {"ids": completion_ids}
 
     def prepare_data(self, *, inputs, processing_class):
         """
@@ -92,6 +92,8 @@ def prepare_inputs_for_env(*, inputs, processing_class):
     inputs: a list of inputs, in this case a list of examples from our dataset
     processing_class: the processing class to use to process the inputs. This is a VLM processor object from the transformers library.
     """
+    
+    # WARNING: This is used in SimpleVisionEnv AND MultistepVisionEnv. If you are making changes here, be aware that it will affect both.
 
     conversations = [ex["messages"] for ex in inputs]
 
