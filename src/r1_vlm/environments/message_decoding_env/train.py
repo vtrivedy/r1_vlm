@@ -8,8 +8,8 @@ from r1_vlm.environments.message_decoding_env.message_decoding_env import (
     MessageDecodingEnv,
 )
 
-os.environ["WANDB_ENTITY"] = "groundlightai"
-os.environ["WANDB_PROJECT"] = "message-decoding-single-words"
+os.environ["WANDB_ENTITY"] = "vhtrivedy-temple-university"
+os.environ["WANDB_PROJECT"] = "grpo-finetuning"
 
 vf_env = MessageDecodingEnv()
 dataset = vf_env.get_dataset()
